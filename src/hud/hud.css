@@ -1,0 +1,290 @@
+/* HUD chrome. Every value here is lifted from README.md §1 and §2 - the
+   handoff calls these final, so change them there first, not here. */
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.hud-anchor {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+}
+.hud-anchor.tl { top: var(--hud-inset); left: var(--hud-inset); align-items: flex-start; }
+.hud-anchor.tr { top: var(--hud-inset); right: var(--hud-inset); align-items: flex-end; }
+.hud-anchor.tc { top: var(--hud-inset); left: 50%; transform: translateX(-50%); align-items: center; }
+.hud-anchor.bl { bottom: var(--hud-inset); left: var(--hud-inset); align-items: flex-start; }
+.hud-anchor.br { bottom: var(--hud-inset); right: var(--hud-inset); align-items: flex-end; }
+.hud-anchor.uc { top: 92px; left: 50%; transform: translateX(-50%); align-items: center; }
+
+/* --- Health -------------------------------------------------------------- */
+
+.health {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.health.right { align-items: flex-end; }
+
+.health-label {
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: 1px;
+  color: var(--green-400);
+  text-shadow: var(--text-hud);
+}
+.health-label.opponent { color: var(--orange-400); }
+
+.heart-row {
+  display: flex;
+  gap: 6px;
+}
+
+.heart-cell {
+  width: 29px;
+  height: 26px;
+  border-radius: 3px;
+  box-sizing: border-box;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+.heart-cell.filled {
+  background: linear-gradient(var(--red-heart-from), var(--red-heart-to));
+  box-shadow: var(--shadow-cell-inset);
+}
+.heart-cell.empty {
+  background: var(--cell-empty);
+  border: 2px solid var(--stroke-muted);
+}
+.heart-cell.just-lost {
+  animation: heart-pop 320ms ease;
+}
+@keyframes heart-pop {
+  0% { transform: scale(1.25); filter: brightness(2.2); }
+  100% { transform: scale(1); filter: none; }
+}
+
+.reward-line {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--text-300);
+}
+.reward-line b {
+  color: var(--green-400);
+  font-weight: 700;
+}
+
+/* --- Objective ----------------------------------------------------------- */
+
+.objective {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  align-items: center;
+}
+
+.objective-text {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: var(--amber-300);
+  text-shadow: var(--text-banner);
+  text-align: center;
+  white-space: nowrap;
+}
+.objective-text.danger {
+  color: #ff8f7a;
+  text-shadow: 0 2px 12px #000, 0 0 26px rgba(255, 106, 92, 0.45);
+  animation: danger-pulse 700ms ease-in-out infinite alternate;
+}
+.objective-text.finisher {
+  color: var(--green-400);
+  text-shadow: 0 2px 12px #000, 0 0 26px rgba(191, 224, 110, 0.45);
+}
+@keyframes danger-pulse {
+  from { opacity: 0.72; }
+  to { opacity: 1; }
+}
+
+.bar {
+  height: 9px;
+  border-radius: 5px;
+  background: rgba(12, 15, 10, 0.78);
+  border: 1px solid #4a5040;
+  box-shadow: var(--shadow-bar-inset);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(var(--amber-fill-from), var(--amber-fill-to));
+  box-shadow: 0 0 14px rgba(224, 145, 44, 0.67);
+  /* The handoff asks for tweening, not snapping. */
+  transition: width 140ms linear;
+}
+.bar.slim { height: 8px; }
+
+/* --- Scale counter ------------------------------------------------------- */
+
+.scale-counter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel-glass);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 11px 19px;
+  box-shadow: var(--shadow-panel);
+}
+.scale-counter.compact { padding: 10px 17px; gap: 10px; }
+
+.scale-glyph {
+  width: 26px;
+  height: 32px;
+  background: linear-gradient(var(--green-200), var(--green-600));
+  clip-path: polygon(50% 0, 100% 32%, 82% 100%, 18% 100%, 0 32%);
+  filter: drop-shadow(0 0 8px rgba(168, 213, 58, 0.5));
+  flex: none;
+}
+.scale-counter.compact .scale-glyph { width: 21px; height: 26px; }
+
+.scale-count {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--text-100);
+  line-height: 1;
+}
+.scale-counter.compact .scale-count { font-size: 21px; }
+
+.scale-label {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: var(--text-400);
+}
+
+.scale-counter.warn { border-color: #7a4a3a; }
+.scale-counter.warn .scale-count { color: #ffb9a6; }
+
+/* --- Action buttons ------------------------------------------------------ */
+
+.action-row {
+  display: flex;
+  gap: 11px;
+  pointer-events: auto;
+}
+
+.action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.action-key {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-400);
+  letter-spacing: 1px;
+}
+
+.action-face {
+  width: 76px;
+  height: 76px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1.05;
+  font-family: var(--font-display);
+  background: linear-gradient(rgba(28, 34, 22, 0.78), rgba(12, 15, 10, 0.86));
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border: 2px solid var(--green-500);
+  color: var(--green-300);
+  box-shadow: var(--glow-button), var(--shadow-button);
+  box-sizing: border-box;
+  transition: transform 90ms ease, filter 90ms ease;
+}
+.action:active .action-face { transform: translateY(2px) scale(0.97); }
+
+.action.disabled { cursor: default; }
+.action.disabled .action-face {
+  background: linear-gradient(rgba(20, 22, 17, 0.78), rgba(9, 11, 8, 0.86));
+  border-color: var(--stroke-muted);
+  color: #8a9079;
+  box-shadow: var(--shadow-button);
+}
+.action.disabled:active .action-face { transform: none; }
+
+.action-face.s14 { font-size: 14px; }
+.action-face.s18 { font-size: 18px; }
+.action-face.s12 { font-size: 12px; }
+
+.action-face.primed {
+  border-color: var(--green-400);
+  box-shadow: 0 0 34px rgba(191, 224, 110, 0.5), var(--shadow-button);
+}
+
+/* --- Pill buttons (training row) ----------------------------------------- */
+
+.pill {
+  border-radius: 6px;
+  padding: 10px 20px;
+  background: var(--panel-glass);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border: 2px solid var(--green-500);
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--green-300);
+  box-shadow: var(--shadow-button);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.pill:disabled { border-color: var(--stroke-muted); color: #8a9079; cursor: default; }
+
+.context-action {
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 10px 18px;
+  background: var(--panel-glass);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--text-300);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.context-action b {
+  font-family: var(--font-display);
+  color: var(--green-400);
+  font-weight: 400;
+  margin-left: 6px;
+}
+.context-action:disabled { color: var(--text-600); cursor: default; }
+.context-action:disabled b { color: var(--text-600); }
+
+.context-action.amber {
+  border: 2px solid var(--amber-400);
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--amber-200);
+  letter-spacing: 0;
+}

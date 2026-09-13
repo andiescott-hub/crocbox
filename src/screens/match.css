@@ -1,0 +1,118 @@
+.match-screen {
+  position: absolute;
+  inset: 0;
+  background: var(--ink-800);
+}
+
+.finisher-warning {
+  margin-top: 8px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #ff9d8a;
+  text-shadow: var(--text-hud);
+  animation: danger-pulse 620ms ease-in-out infinite alternate;
+}
+
+.pause-tab {
+  position: absolute;
+  bottom: var(--hud-inset);
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: var(--panel-glass);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  color: var(--text-400);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 7px 16px;
+  cursor: pointer;
+}
+
+.centre-flash {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.countdown {
+  font-family: var(--font-display);
+  font-size: 56px;
+  color: var(--amber-300);
+  text-shadow: var(--text-banner);
+  animation: countdown-pop 400ms ease;
+}
+@keyframes countdown-pop {
+  from { transform: scale(1.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.skip-hint {
+  position: absolute;
+  bottom: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--text-400);
+  text-shadow: var(--text-hud);
+  z-index: 4;
+  animation: danger-pulse 900ms ease-in-out infinite alternate;
+}
+
+.result-card,
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(4, 5, 4, 0.72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  padding: 24px;
+  text-align: center;
+}
+
+.result-title {
+  font-family: var(--font-display);
+  font-size: 56px;
+  letter-spacing: 2px;
+  color: var(--text-100);
+  text-shadow: var(--text-banner);
+}
+.result-title.win { color: var(--green-400); }
+.result-title.loss { color: var(--orange-400); }
+
+.result-reason {
+  font-family: var(--font-ui);
+  font-size: 17px;
+  letter-spacing: 3px;
+  color: var(--text-400);
+}
+
+.result-scales {
+  font-family: var(--font-display);
+  font-size: 26px;
+}
+.result-scales.win { color: var(--green-400); }
+.result-scales.loss { color: #ff8f7a; }
+
+.result-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 10px;
+}

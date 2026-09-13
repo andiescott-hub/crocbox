@@ -1,0 +1,58 @@
+.training-screen {
+  position: absolute;
+  inset: 0;
+  background: var(--ink-800);
+}
+
+.pill-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.pill-stack.right { align-items: flex-end; }
+
+/* Sits under the bag status, not at the bottom: README §2 keeps the lower
+   centre clear because the player's own claws occupy it. */
+.tier-strip {
+  position: absolute;
+  left: 50%;
+  top: 148px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 4;
+}
+
+.tier-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-glass);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.tier-chip:disabled { cursor: default; opacity: 0.6; }
+.tier-chip.current { border: 2px solid var(--green-500); box-shadow: var(--glow-button); }
+.tier-chip.gate { border-color: var(--violet-500); }
+
+.tier-name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--text-300);
+  letter-spacing: 1px;
+}
+.tier-chip.gate .tier-name { color: var(--violet-300); }
+
+.tier-state {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-500);
+}

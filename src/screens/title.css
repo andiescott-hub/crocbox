@@ -1,0 +1,56 @@
+.title-screen {
+  background: radial-gradient(ellipse 80% 70% at 50% 34%, #1d2417, #070806 72%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.title-glow {
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 720px;
+  height: 420px;
+  background: radial-gradient(ellipse at center, rgba(246, 180, 85, 0.22), transparent 70%);
+  pointer-events: none;
+}
+
+.title-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 18px;
+}
+
+.title-word {
+  font-family: var(--font-display);
+  font-size: 56px;
+  letter-spacing: 4px;
+  line-height: 0.98;
+  color: var(--green-400);
+  text-shadow: 0 4px 0 #2c3a16, 0 2px 26px rgba(191, 224, 110, 0.35);
+}
+.title-word.alt {
+  color: var(--amber-300);
+  text-shadow: 0 4px 0 #4a3212, 0 2px 26px rgba(246, 180, 85, 0.4);
+}
+
+.title-tag {
+  margin-top: 10px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  letter-spacing: 3px;
+  color: var(--text-400);
+}
+
+.title-croc {
+  margin: 2px 0 -6px;
+  filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.6));
+}
+
+.title-actions { justify-content: center; margin-top: 4px; }
+
+.title-note { max-width: 620px; margin-top: 16px; text-align: center; }

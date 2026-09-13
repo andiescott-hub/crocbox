@@ -1,0 +1,70 @@
+/* Design tokens - README.md "Design Tokens". These values are final; treat
+   this file as the single source for colour, shadow and radius. */
+:root {
+  /* Colour */
+  --ink-900: #070806;
+  --ink-800: #0a0b09;
+  --ink-700: #12150f;
+  --panel-glass: rgba(9, 11, 8, 0.68);
+  --panel-flat: rgba(9, 11, 8, 0.82);
+  --panel-border: #414736;
+  --card-border: #343a2c;
+  --stroke-muted: #545a48;
+  --cell-empty: rgba(16, 19, 14, 0.72);
+
+  --green-400: #bfe06e;
+  --green-500: #9cc94f;
+  --green-300: #d6ed9c;
+  --green-600: #7ea82c;
+  --green-200: #d3f07a;
+  --green-btn-from: #c6ea7d;
+  --green-btn-to: #8bb83c;
+
+  --amber-400: #f0b256;
+  --amber-300: #f6b455;
+  --amber-200: #f6c987;
+  --amber-fill-from: #ffd287;
+  --amber-fill-to: #e0912c;
+  --orange-400: #f0a05c;
+
+  --red-heart-from: #ff6a5c;
+  --red-heart-to: #c31f1f;
+
+  --violet-500: #6b4bd6;
+  --violet-300: #b79bff;
+  --violet-200: #9c8ad4;
+
+  --text-100: #f2f5ea;
+  --text-200: #eef1e6;
+  --text-300: #e2e6d6;
+  --text-400: #949a85;
+  --text-500: #858b78;
+  --text-600: #6d7365;
+
+  /* Shadow & blur */
+  --shadow-panel: 0 10px 28px rgba(0, 0, 0, 0.67);
+  --shadow-button: 0 10px 24px rgba(0, 0, 0, 0.67);
+  --glow-button: 0 0 22px rgba(156, 201, 79, 0.25);
+  --shadow-card: 0 18px 34px rgba(0, 0, 0, 0.55);
+  --shadow-cell-inset: inset 0 -6px 8px rgba(0, 0, 0, 0.33), 0 2px 8px rgba(0, 0, 0, 0.67);
+  --shadow-bar-inset: inset 0 2px 5px rgba(0, 0, 0, 0.69);
+  --text-hud: 0 2px 8px #000;
+  --text-banner: 0 2px 12px #000, 0 0 26px rgba(246, 180, 85, 0.4);
+  --vignette: radial-gradient(ellipse 84% 72% at 50% 46%, transparent, rgba(4, 5, 4, 0.55));
+
+  /* Geometry */
+  --hud-inset: 26px;
+  --stage-w: 1120px;
+  --stage-h: 671px;
+
+  --font-display: 'Bungee', 'Arial Black', sans-serif;
+  --font-ui: 'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* The no-blur fallback the handoff asks for: never drop the panel, the text
+   needs the contrast. */
+@supports not ((backdrop-filter: blur(7px)) or (-webkit-backdrop-filter: blur(7px))) {
+  :root {
+    --panel-glass: var(--panel-flat);
+  }
+}
