@@ -30,6 +30,7 @@ no account, no login: open the URL on the iPad.
 | Scratch | left mouse or `J` | the SCRATCH button |
 | Box | right mouse or `K` | tap the right half, or the BOX button |
 | Jump bite | `Space` / `W` / `↑` | swipe up on the right half, or the JUMP BITE button |
+| | *(on a 4s cooldown, shown on the button)* | |
 | Regenerate | `E` | the REGENERATE button |
 | Pause | `Esc` | the PAUSE tab |
 
@@ -43,6 +44,25 @@ step into range and a full push is a run.
 Nothing on the left half attacks, so planting a thumb never throws a punch, and
 nothing on the right half moves you. A faint ring shows where the pad has taken
 hold and disappears the moment you lift off.
+
+## What each move is for
+
+A move that is second best at everything never gets used, so each has one job
+it is plainly best at.
+
+| | Job | Shove | Stun | Ends fights by |
+|---|---|---|---|---|
+| Scratch | fast chip and the interrupt | small | short | wearing the coat down |
+| Box | the shove | hardest in the game | long enough to follow up | ring-out |
+| Jump bite | the kill | almost none | medium | the under-25 finisher |
+
+The bite was previously best at all three at once, which left scratch and box
+feeling like preamble. It now shoves least, and sits on a cooldown, so most of
+a fight is boxing and scratching and the bite is the move you wait for.
+
+Landing a hit freezes the frame, kicks the camera the way the punch went, and
+throws a shock ring and sparks scaled to the move. All three are per-move, so a
+scratch is a tap and a box is a thud.
 
 ## What is built
 

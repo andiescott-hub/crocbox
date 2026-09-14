@@ -20,7 +20,7 @@ import {
   startMove,
   stepFighterTimers
 } from './fighter.js';
-import { spawnScales, stepScales } from './particles.js';
+import { spawnImpact, spawnScales, stepImpacts, stepScales } from './particles.js';
 import { createBrain, stepBrain } from './ai.js';
 
 export const COUNTDOWN = 1.1;
@@ -66,7 +66,8 @@ export function createMatch({ player, opponent }) {
     brainOut: {},
     opponent,
     particles: [],
-    stars: [],
+    impacts: [],
+    camKick: 0,
     time: 0,
     status: 'countdown', // countdown -> fighting -> ending -> result
     countdown: COUNTDOWN,
@@ -123,10 +124,15 @@ function applyHit(match, attacker, target, type) {
   const impactY = ARENA.ground + target.y - m.hitHeight;
 
   target.stun = m.stun;
-  target.hitFlash = 0.2;
+  target.hitFlash = type === 'scratch' ? 0.18 : 0.3;
   target.vx += attacker.facing * m.push;
-  match.hitstop = HIT_STOP;
+  // Freezing the frame for a moment is what sells weight. Scaled per move, so
+  // a scratch is a tap and a box is a thud.
+  match.hitstop = Math.max(match.hitstop, m.hitStop ?? HIT_STOP);
   shake(match, m.shake);
+  // A directional shove of the camera, on top of the omnidirectional shake.
+  match.camKick += attacker.facing * m.push * 0.011;
+  spawnImpact(match.impacts, { x: impactX, y: impactY, dir: attacker.facing, type });
 
   // [T13] A jump bite on a target under the threshold kills outright. Checked
   // before the coat is stripped, and it applies to both fighters.
@@ -262,18 +268,23 @@ export function stepMatch(match, dt, input) {
     if (match.banner.t > 1.8) match.banner = null;
   }
   if (match.shake > 0) match.shake = Math.max(0, match.shake - dt * 46);
+  match.camKick *= Math.exp(-9 * dt);
+  if (Math.abs(match.camKick) < 0.05) match.camKick = 0;
 
   if (match.status === 'countdown') {
     match.countdown -= dt;
     if (match.countdown <= 0) match.status = 'fighting';
     stepScales(match.particles, dt, ARENA.ground);
+    stepImpacts(match.impacts, dt);
     updateCamera(match, dt);
     return match;
   }
 
   if (match.hitstop > 0) {
     match.hitstop -= dt;
-    stepScales(match.particles, dt, ARENA.ground);
+    // The world holds still, but the burst and the camera keep moving, so the
+    // freeze reads as impact rather than as a dropped frame.
+    stepImpacts(match.impacts, dt);
     updateCamera(match, dt);
     return match;
   }
@@ -325,6 +336,7 @@ export function stepMatch(match, dt, input) {
   }
 
   stepScales(match.particles, dt, ARENA.ground);
+  stepImpacts(match.impacts, dt);
   updateCamera(match, dt);
   return match;
 }
@@ -368,6 +380,8 @@ export function hudSnapshot(match) {
     playerDanger: player.pushProgress,
     regenCooldown: Math.ceil(player.regenCd),
     regenReady: player.regenCd <= 0 && player.hearts < player.maxHearts,
+    biteCooldown: Math.ceil(player.biteCd),
+    biteReady: player.biteCd <= 0,
     canAct: canAct(player),
     finisherOpen: opp.scales < FINISHER_THRESHOLD,
     finisherRisk: player.scales < FINISHER_THRESHOLD,

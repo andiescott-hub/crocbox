@@ -108,3 +108,39 @@ export function scaleGlint(p) {
   if (t < 0 || t > VFX.glintTime) return 0;
   return Math.sin((t / VFX.glintTime) * Math.PI);
 }
+
+// Impact bursts. Separate from the scale shed because they fire on every
+// connect, coat or no coat, and because their whole job is to make a landed
+// hit read at a glance: freeze, flash, shove the camera, throw sparks.
+
+let impactId = 1;
+
+export const IMPACT = {
+  scratch: { shards: 6, reach: 40, hue: '#d3f07a', life: 0.26, weight: 0.55 },
+  box: { shards: 13, reach: 98, hue: '#ffd287', life: 0.4, weight: 1 },
+  bite: { shards: 15, reach: 108, hue: '#ff9a6a', life: 0.44, weight: 1.1 }
+};
+
+export function spawnImpact(list, { x, y, dir, type }) {
+  const spec = IMPACT[type] ?? IMPACT.scratch;
+  const shards = [];
+  for (let i = 0; i < spec.shards; i += 1) {
+    // Fanned forward along the punch, not thrown evenly in a circle.
+    const a = (Math.random() - 0.5) * 1.9 + (dir > 0 ? 0 : Math.PI);
+    shards.push({
+      a,
+      len: spec.reach * (0.5 + Math.random() * 0.8),
+      w: 3 + Math.random() * 4.4,
+      delay: Math.random() * 0.06
+    });
+  }
+  list.push({ id: impactId++, x, y, dir, t: 0, life: spec.life, spec, shards, dead: false });
+}
+
+export function stepImpacts(list, dt) {
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    const p = list[i];
+    p.t += dt;
+    if (p.t >= p.life) list.splice(i, 1);
+  }
+}

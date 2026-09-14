@@ -37,6 +37,70 @@ function drawScales(ctx, particles) {
   }
 }
 
+function drawImpacts(ctx, impacts) {
+  for (const p of impacts) {
+    const k = p.t / p.life;
+    if (k >= 1) continue;
+    const ease = 1 - Math.pow(1 - k, 2.4);
+    const fade = 1 - k;
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+
+    const w = p.spec.weight;
+
+    // Two shock rings at different speeds, flattened along the punch.
+    ctx.globalAlpha = fade * 0.95;
+    ctx.strokeStyle = p.spec.hue;
+    ctx.lineWidth = 7 * w * fade + 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, (14 + p.spec.reach * 1.2) * ease, (10 + p.spec.reach * 0.82) * ease, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    const fast = 1 - Math.pow(1 - Math.min(1, k * 1.8), 2.4);
+    ctx.globalAlpha = fade * 0.55;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3 * w * fade + 1;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, (10 + p.spec.reach * 1.5) * fast, (7 + p.spec.reach) * fast, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // White core. Brief, but bright enough to punch a hole in the frame.
+    if (k < 0.45) {
+      const c = 1 - k / 0.45;
+      ctx.globalAlpha = c;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, 0, p.spec.reach * 0.55 * c + 8 * w, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = c * 0.5;
+      ctx.fillStyle = p.spec.hue;
+      ctx.beginPath();
+      ctx.arc(0, 0, p.spec.reach * 0.85 * c + 12 * w, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Shards, fanned forward along the punch.
+    ctx.globalAlpha = fade;
+    ctx.strokeStyle = p.spec.hue;
+    ctx.lineCap = 'round';
+    for (const sh of p.shards) {
+      const sk = Math.max(0, (k - sh.delay) / (1 - sh.delay));
+      if (sk <= 0) continue;
+      const e = 1 - Math.pow(1 - sk, 3);
+      const inner = sh.len * e * 0.52;
+      const outer = sh.len * e;
+      ctx.lineWidth = sh.w * (1 - sk);
+      ctx.strokeStyle = sk < 0.4 ? '#ffffff' : p.spec.hue;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(sh.a) * inner, Math.sin(sh.a) * inner * 0.72);
+      ctx.lineTo(Math.cos(sh.a) * outer, Math.sin(sh.a) * outer * 0.72);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
 function drawNameplate(ctx, f, text, tone, headHeight) {
   if (!text) return;
   const y = ARENA.ground + f.y - headHeight - 44;
@@ -68,7 +132,9 @@ function drawNameplate(ctx, f, text, tone, headHeight) {
 
 export function renderMatch(ctx, match, { victoryDance = null } = {}) {
   const shake = match.shake;
-  const sx = shake > 0 ? (Math.random() - 0.5) * shake : 0;
+  // Random shake for noise, plus a directional kick so the camera visibly gets
+  // shoved the way the punch went.
+  const sx = (shake > 0 ? (Math.random() - 0.5) * shake : 0) + (match.camKick ?? 0);
   const sy = shake > 0 ? (Math.random() - 0.5) * shake : 0;
 
   ctx.save();
@@ -100,6 +166,7 @@ export function renderMatch(ctx, match, { victoryDance = null } = {}) {
   }
 
   drawScales(ctx, match.particles);
+  drawImpacts(ctx, match.impacts ?? []);
 
   drawNameplate(ctx, player, player.nameplate, '#bfe06e', crocHeadHeight(player, danceFor(player)));
   drawNameplate(ctx, opp, opp.name, '#f0a05c', crocHeadHeight(opp, danceFor(opp)));

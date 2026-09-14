@@ -222,10 +222,10 @@ function MatchRun({ stageRef, opponentId, onRetry }) {
             <ActionButton label="BOX" hint="RMB" size="s18" disabled={!acting} onPress={() => press('box')} />
             <ActionButton
               label="JUMP BITE"
-              hint="SPACE"
+              hint={hud.biteCooldown > 0 ? `${hud.biteCooldown}s` : 'SPACE'}
               size="s12"
-              disabled={!acting}
-              primed={hud.finisherOpen}
+              disabled={!acting || !hud.biteReady}
+              primed={hud.finisherOpen && hud.biteReady}
               onPress={() => press('bite')}
             />
             <ActionButton

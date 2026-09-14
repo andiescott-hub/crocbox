@@ -38,6 +38,14 @@ split roughly 90% finisher, 10% ring-out, 0% knockout.
 If hearts are meant to matter, the smallest fix is to make the finisher require
 something more than being under the threshold, and that is a change to his rule.
 
+**Update after playtesting.** This showed up in Tristan's hands as "box and
+scratch don't have much impact", which is the same finding wearing different
+clothes. Giving each move its own job and putting the bite on a cooldown fixed
+the feel and stretched fights from six to thirteen seconds out to nine to
+sixteen. It did not change the ending: the bite still closes about nine fights
+in ten, because the rule as written guarantees the finisher window opens before
+hearts are reachable. Only his call on the rule changes that.
+
 ## 3. The finisher reward and the ladder reward disagree
 
 §3 says the winner of a finisher "takes the target's scales". §5 fixes the

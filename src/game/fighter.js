@@ -1,4 +1,4 @@
-import { ARENA, BODY, MOVES, PHYSICS, REGEN, CLAW_MULTIPLIER } from './constants.js';
+import { ARENA, BITE_COOLDOWN, BODY, MOVES, PHYSICS, REGEN, CLAW_MULTIPLIER } from './constants.js';
 
 export function createFighter({
   id,
@@ -36,6 +36,7 @@ export function createFighter({
     vulnerable: 0,
     hitFlash: 0,
     regenCd: 0,
+    biteCd: 0,
     lastArm: 1,
     walkPhase: 0,
     moving: 0,
@@ -69,6 +70,8 @@ export function startMove(f, type) {
     return true;
   }
   if (type === 'bite') {
+    if (f.biteCd > 0) return false;
+    f.biteCd = BITE_COOLDOWN;
     f.action = { type: 'bite', t: 0, connected: false };
     f.vy = PHYSICS.jumpVelocity;
     f.y = -0.001;
@@ -124,6 +127,7 @@ export function stepFighterTimers(f, dt) {
   if (f.vulnerable > 0) f.vulnerable = Math.max(0, f.vulnerable - dt);
   if (f.hitFlash > 0) f.hitFlash = Math.max(0, f.hitFlash - dt);
   if (f.regenCd > 0) f.regenCd = Math.max(0, f.regenCd - dt);
+  if (f.biteCd > 0) f.biteCd = Math.max(0, f.biteCd - dt);
 }
 
 export function integrate(f, dt) {

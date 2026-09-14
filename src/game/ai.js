@@ -90,18 +90,19 @@ export function stepBrain(brain, self, foe, dt, out) {
 }
 
 function pickAttack(brain, self, foe, out, gap, s) {
+  const biteReady = self.biteCd <= 0;
   // [T13] The finisher cuts both ways. A confident opponent goes hunting for it
   // the moment the player's coat drops under the threshold.
   const finisherOn = foe.scales < FINISHER_THRESHOLD && Math.random() < 0.06 + s * 0.55;
   const r = Math.random();
 
-  if (finisherOn && gap > 150 && gap < 460) {
+  if (finisherOn && biteReady && gap > 150 && gap < 460) {
     out.bite = true;
     brain.hold = 1.0 + (1 - s) * 0.8;
     return;
   }
   if (gap > 210) {
-    if (r < 0.1 + s * 0.24) {
+    if (biteReady && r < 0.1 + s * 0.24) {
       out.bite = true;
       brain.hold = 1.2 + (1 - s) * 1.1;
     }
