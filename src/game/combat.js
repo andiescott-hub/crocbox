@@ -235,16 +235,19 @@ function applyInput(f, input, dt) {
     f.moving = Math.max(0, f.moving - dt * 6);
     return;
   }
-  let move = 0;
-  if (input.left) move -= 1;
-  if (input.right) move += 1;
-  if (move !== 0) {
-    f.x += move * PHYSICS.walkSpeed * dt;
-    f.walkPhase += dt * 9;
-    f.moving = Math.min(1, f.moving + dt * 8);
-  } else {
-    f.moving = Math.max(0, f.moving - dt * 8);
+  // The touch pad is analog, so a small lean is a careful step and a full push
+  // is a run. Keyboard and the AI stay on the booleans, which read as full tilt.
+  let move = input.axis ?? 0;
+  if (move === 0) {
+    if (input.left) move -= 1;
+    if (input.right) move += 1;
   }
+  const speed = Math.abs(move);
+  if (speed > 0) {
+    f.x += move * PHYSICS.walkSpeed * dt;
+    f.walkPhase += dt * 9 * (0.45 + speed * 0.55);
+  }
+  f.moving += (speed - f.moving) * Math.min(1, dt * 9);
   if (input.bite) startMove(f, 'bite');
   else if (input.box) startMove(f, 'box');
   else if (input.scratch) startMove(f, 'scratch');

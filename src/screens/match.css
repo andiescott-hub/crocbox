@@ -116,3 +116,40 @@
   justify-content: center;
   margin-top: 10px;
 }
+
+/* The movement pad. Deliberately faint: it confirms the thumb has taken hold
+   without becoming another thing to look at during a fight. */
+.move-pad {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.pad-ring,
+.pad-nub {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.pad-ring {
+  width: 116px;
+  height: 116px;
+  border: 2px solid rgba(156, 201, 79, 0.3);
+  background: radial-gradient(circle, rgba(156, 201, 79, 0.09), transparent 68%);
+}
+
+.pad-nub {
+  width: 46px;
+  height: 46px;
+  background: rgba(191, 224, 110, 0.26);
+  border: 2px solid rgba(191, 224, 110, 0.6);
+  box-shadow: 0 0 18px rgba(156, 201, 79, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .move-pad { transition: none; }
+}

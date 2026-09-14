@@ -59,9 +59,11 @@ function MatchRun({ stageRef, opponentId, onRetry }) {
     return true;
   }, []);
 
+  const padRef = useRef(null);
   const { input, press, clearEdges } = useMatchInput(stageRef, {
     enabled: !paused,
-    onAnyInput
+    onAnyInput,
+    padRef
   });
 
   // The loop. Fixed 120hz substeps under a variable frame so the physics and
@@ -174,6 +176,12 @@ function MatchRun({ stageRef, opponentId, onRetry }) {
   return (
     <div className="screen match-screen">
       <canvas ref={canvasRef} className="arena" />
+
+      {/* Shows only while a thumb is down, and only where the thumb is. */}
+      <div className="move-pad" ref={padRef} aria-hidden="true">
+        <span className="pad-ring" />
+        <span className="pad-nub" />
+      </div>
 
       <div className="hud">
         <div className="hud-anchor tl">

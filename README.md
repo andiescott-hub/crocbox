@@ -26,15 +26,23 @@ no account, no login: open the URL on the iPad.
 
 | | Desk | iPad |
 |---|---|---|
-| Move | `A` / `D` or arrows | drag on the left half of the arena |
-| Scratch | left mouse or `J` | tap the left half, or the SCRATCH button |
+| Move | `A` / `D` or arrows | left thumb anywhere on the left half |
+| Scratch | left mouse or `J` | the SCRATCH button |
 | Box | right mouse or `K` | tap the right half, or the BOX button |
-| Jump bite | `Space` / `W` / `↑` | swipe up, or the JUMP BITE button |
+| Jump bite | `Space` / `W` / `↑` | swipe up on the right half, or the JUMP BITE button |
 | Regenerate | `E` | the REGENERATE button |
 | Pause | `Esc` | the PAUSE tab |
 
-Movement and attacks are separate touch paths, so a thumb held on the movement
-pad does not block a tap on an action button.
+On touch the left half is the movement hand and the right half is the fighting
+hand, and the two never overlap. Put a thumb down anywhere on the left and that
+spot becomes the centre: lean left to back off, lean right to close in, let go
+to stop. Push past full tilt and the centre follows your thumb, so you never
+run out of screen mid-fight. Speed is proportional, so a small lean is a careful
+step into range and a full push is a run.
+
+Nothing on the left half attacks, so planting a thumb never throws a punch, and
+nothing on the right half moves you. A faint ring shows where the pad has taken
+hold and disappears the moment you lift off.
 
 ## What is built
 

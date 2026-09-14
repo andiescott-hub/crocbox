@@ -19,11 +19,24 @@ const KEY_PRESS = {
   KeyE: 'regen'
 };
 
-export function createInput() {
-  return { left: false, right: false, scratch: false, box: false, bite: false, regen: false };
+// How far the thumb travels for full speed, and the slack around the centre,
+// both as a fraction of the stage width so they hold at any screen size.
+const PAD_FULL = 0.055; // about 62px at the 1120px reference
+const PAD_DEAD = 0.006;
+
+// Thumb displacement to speed. Pulled out as a pure function so it can be
+// asserted on directly; the rest of the pad is DOM plumbing around it.
+export function padAxis(dx) {
+  const t = (Math.abs(dx) - PAD_DEAD) / (PAD_FULL - PAD_DEAD);
+  return t <= 0 ? 0 : Math.sign(dx) * Math.min(1, t);
 }
 
-export function useMatchInput(stageRef, { enabled = true, onAnyInput } = {}) {
+export function createInput() {
+  // `axis` is the analog touch pad, -1 to 1. Keyboard keeps the booleans.
+  return { left: false, right: false, axis: 0, scratch: false, box: false, bite: false, regen: false };
+}
+
+export function useMatchInput(stageRef, { enabled = true, onAnyInput, padRef } = {}) {
   const input = useRef(createInput());
 
   const press = (name) => {
@@ -56,6 +69,7 @@ export function useMatchInput(stageRef, { enabled = true, onAnyInput } = {}) {
     const blur = () => {
       input.current.left = false;
       input.current.right = false;
+      input.current.axis = 0;
     };
 
     window.addEventListener('keydown', down);
@@ -72,14 +86,36 @@ export function useMatchInput(stageRef, { enabled = true, onAnyInput } = {}) {
     const el = stageRef.current;
     if (!el || !enabled) return undefined;
 
-    // One entry per finger. No pointer capture: capturing on the stage would
-    // swallow the HUD buttons, and holding the movement pad with one thumb
-    // while tapping BOX with the other is the whole point on an iPad.
+    // Left half is the movement hand, right half is the fighting hand, and the
+    // two never overlap. Put a thumb down anywhere on the left and that spot
+    // becomes the centre: push left to back off, push right to close in, let go
+    // to stop. No fixed stick to find and nothing to look at while fighting.
+    //
+    // One entry per finger, and no pointer capture: capturing on the stage
+    // would swallow the HUD buttons, and holding the pad with one thumb while
+    // tapping BOX with the other is the whole point on an iPad.
     const active = new Map();
+    let padId = null;
 
     const rectPos = (e) => {
       const r = el.getBoundingClientRect();
       return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+    };
+
+    const showPad = (t) => {
+      const host = padRef?.current;
+      if (!host) return;
+      const [ring, nub] = host.children;
+      if (!ring || !nub) return;
+      host.style.opacity = '1';
+      ring.style.left = `${t.originX * 100}%`;
+      ring.style.top = `${t.originY * 100}%`;
+      nub.style.left = `${t.thumbX * 100}%`;
+      nub.style.top = `${t.thumbY * 100}%`;
+    };
+
+    const hidePad = () => {
+      if (padRef?.current) padRef.current.style.opacity = '0';
     };
 
     const onDown = (e) => {
@@ -92,45 +128,58 @@ export function useMatchInput(stageRef, { enabled = true, onAnyInput } = {}) {
         e.preventDefault();
         return;
       }
+
       const p = rectPos(e);
-      active.set(e.pointerId, {
-        x0: p.x,
+      const zone = p.x < 0.5 ? 'move' : 'hit';
+      const t = {
+        zone,
+        pointerType: e.pointerType,
+        originX: p.x,
+        originY: p.y,
+        thumbX: p.x,
+        thumbY: p.y,
         y0: p.y,
         moved: false,
-        t0: performance.now(),
-        // Left half of the arena is the movement pad, right half is attacks.
-        zone: p.x < 0.5 ? 'move' : 'hit'
-      });
-      e.preventDefault();
-    };
+        t0: performance.now()
+      };
+      active.set(e.pointerId, t);
 
-    const applyHeld = () => {
-      let left = false;
-      let right = false;
-      for (const t of active.values()) {
-        if (t.zone === 'move' && t.moved) {
-          left = left || t.dir < 0;
-          right = right || t.dir > 0;
-        }
+      if (zone === 'move') {
+        // The newest thumb owns the pad, so shifting grip just re-centres.
+        padId = e.pointerId;
+        showPad(t);
       }
-      input.current.left = left;
-      input.current.right = right;
+      e.preventDefault();
     };
 
     const onMove = (e) => {
       const t = active.get(e.pointerId);
-      if (!t) return;
+      // Mouse and touch can be handed the same pointer id, and on a hybrid
+      // device a stray cursor move would otherwise steer the pad.
+      if (!t || t.pointerType !== e.pointerType) return;
       const p = rectPos(e);
-      const dx = p.x - t.x0;
-      const dy = p.y - t.y0;
+      t.thumbX = p.x;
+      t.thumbY = p.y;
 
-      if (t.zone === 'move' && Math.abs(dx) > 0.012) {
-        t.moved = true;
-        t.dir = Math.sign(dx);
-        applyHeld();
+      if (t.zone === 'move') {
+        let dx = p.x - t.originX;
+        // Push past full tilt and the centre follows, so you never run out of
+        // screen mid-fight and never have to lift off to reset.
+        if (Math.abs(dx) > PAD_FULL) {
+          t.originX = p.x - Math.sign(dx) * PAD_FULL;
+          t.originY += (p.y - t.originY) * 0.5;
+          dx = Math.sign(dx) * PAD_FULL;
+        }
+        t.axis = padAxis(dx);
+        if (e.pointerId === padId) showPad(t);
+        applyAxis();
+        return;
       }
-      // Up-swipe is the jump bite, from either half.
-      if (dy < -0.09 && Math.abs(dy) > Math.abs(dx)) {
+
+      // Swipe up on the fighting hand is the jump bite. Deliberately not read
+      // from the movement hand, where a thumb drifting up would fire it.
+      const dy = p.y - t.y0;
+      if (dy < -0.09 && Math.abs(dy) > Math.abs(p.x - t.originX)) {
         t.moved = true;
         press('bite');
         t.y0 = p.y;
@@ -139,29 +188,68 @@ export function useMatchInput(stageRef, { enabled = true, onAnyInput } = {}) {
 
     const onUp = (e) => {
       const t = active.get(e.pointerId);
-      if (!t) return;
+      if (!t || t.pointerType !== e.pointerType) return;
       active.delete(e.pointerId);
-      if (!t.moved && performance.now() - t.t0 < 260) {
-        press(t.zone === 'move' ? 'scratch' : 'box');
+
+      if (t.zone === 'hit' && !t.moved && performance.now() - t.t0 < 260) {
+        press('box');
       }
-      applyHeld();
+      if (e.pointerId === padId) {
+        padId = null;
+        // Hand back to another thumb still on the pad, if there is one.
+        for (const [id, other] of active) {
+          if (other.zone === 'move') {
+            padId = id;
+            showPad(other);
+            break;
+          }
+        }
+        if (padId === null) hidePad();
+      }
+      applyAxis();
     };
 
+    // Releasing always stops the crocodile, and so does easing back to centre.
+    // The old build only recomputed on the way out, so a thumb returning to the
+    // middle kept walking.
+    function applyAxis() {
+      let axis = 0;
+      for (const t of active.values()) {
+        if (t.zone === 'move' && t.axis && Math.abs(t.axis) > Math.abs(axis)) axis = t.axis;
+      }
+      input.current.axis = axis;
+    }
+
     const noMenu = (e) => e.preventDefault();
+
+    // A finger lifted outside the stage, or a touch iOS quietly cancels, never
+    // reports to the element. Without a window-level backstop the crocodile
+    // would walk off on its own.
+    const onLostPointer = (e) => {
+      if (active.has(e.pointerId)) onUp(e);
+    };
 
     el.addEventListener('pointerdown', onDown);
     el.addEventListener('pointermove', onMove);
     el.addEventListener('pointerup', onUp);
     el.addEventListener('pointercancel', onUp);
     el.addEventListener('contextmenu', noMenu);
+    window.addEventListener('pointerup', onLostPointer);
+    window.addEventListener('pointercancel', onLostPointer);
+    window.addEventListener('blur', hidePad);
     return () => {
       el.removeEventListener('pointerdown', onDown);
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onUp);
       el.removeEventListener('contextmenu', noMenu);
+      window.removeEventListener('pointerup', onLostPointer);
+      window.removeEventListener('pointercancel', onLostPointer);
+      window.removeEventListener('blur', hidePad);
+      input.current.axis = 0;
+      hidePad();
     };
-  }, [stageRef, enabled, onAnyInput]);
+  }, [stageRef, enabled, onAnyInput, padRef]);
 
   const clearEdges = () => {
     const i = input.current;
