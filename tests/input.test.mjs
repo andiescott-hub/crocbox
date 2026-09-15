@@ -1,7 +1,13 @@
 // Run with: npm test
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { padAxis, createInput } from '../src/game/useInput.js';
+import {
+  padAxis,
+  padVertical,
+  readsAsJump,
+  readsAsCrouch,
+  createInput
+} from '../src/game/useInput.js';
 
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} !== ${b}`);
 
@@ -30,6 +36,25 @@ test('the pad clamps at full tilt in both directions', () => {
 test('a fresh input frame is at rest', () => {
   const i = createInput();
   assert.equal(i.axis, 0);
+  assert.equal(i.vertical, 0);
+  assert.equal(i.jump, false);
   assert.equal(i.left, false);
   assert.equal(i.right, false);
+});
+
+// Vertical is coarser than horizontal on purpose: walking must never trip a
+// jump or a crouch, so the thumb has to mean it. dy is screen space, down
+// positive, so up reads negative.
+test('the pad ignores small vertical wobble while walking', () => {
+  near(padVertical(0), 0);
+  near(padVertical(-0.02), 0);
+  near(padVertical(0.02), 0);
+});
+
+test('a firm flick up reads as a jump and a firm pull down as a crouch', () => {
+  assert.ok(readsAsJump(padVertical(-0.075)));
+  assert.ok(readsAsCrouch(padVertical(0.075)));
+  // A gentle lean is neither.
+  assert.ok(!readsAsJump(padVertical(-0.035)));
+  assert.ok(!readsAsCrouch(padVertical(0.035)));
 });

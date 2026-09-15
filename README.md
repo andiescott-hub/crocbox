@@ -24,13 +24,18 @@ no account, no login: open the URL on the iPad.
 
 ## Controls
 
+The left thumb is a stick and the right hand hits. What a hit *does* depends on
+where the left thumb is.
+
 | | Desk | iPad |
 |---|---|---|
-| Move | `A` / `D` or arrows | left thumb anywhere on the left half |
-| Scratch | left mouse or `J` | the SCRATCH button |
-| Box | right mouse or `K` | tap the right half, or the BOX button |
-| Jump bite | `Space` / `W` / `↑` | swipe up on the right half, or the JUMP BITE button |
-| | *(on a 4s cooldown, shown on the button)* | |
+| Walk | `A` / `D` | lean the left thumb |
+| Jump | `Space` / `W` / `↑` | flick the left thumb up |
+| Crouch | hold `S` / `↓` | pull the left thumb down |
+| Guard | hold away from him | pull the left thumb firmly back |
+| Scratch | left mouse or `J` | first action button |
+| Box | right mouse or `K` | tap the right half, or the second button |
+| Bite | `L` | third action button |
 | Regenerate | `E` | the REGENERATE button |
 | Pause | `Esc` | the PAUSE tab |
 
@@ -45,20 +50,27 @@ Nothing on the left half attacks, so planting a thumb never throws a punch, and
 nothing on the right half moves you. A faint ring shows where the pad has taken
 hold and disappears the moment you lift off.
 
-## What each move is for
+## The move grid
 
-A move that is second best at everything never gets used, so each has one job
-it is plainly best at.
+Three attack buttons crossed with three stances from the left thumb. Nine moves
+out of four controls, and the buttons rename themselves as you change stance,
+which is the only tutorial the game needs.
 
-| | Job | Shove | Stun | Ends fights by |
-|---|---|---|---|---|
-| Scratch | fast chip and the interrupt | small | short | wearing the coat down |
-| Box | the shove | hardest in the game | long enough to follow up | ring-out |
-| Jump bite | the kill | almost none | medium | the under-25 finisher |
+| | SCRATCH | BOX | BITE |
+|---|---|---|---|
+| **Standing** | quick claw, chip damage | the hardest shove in the game | lunging bite, solid chunk |
+| **Crouched** | SWEEP, knocks him flat | UPPER CUT, launches him. The anti-air | CHOMP, clamps on, huge stun |
+| **In the air** | DIVE, fast and light | HAMMER, drives him into the concrete | JUMP BITE, the finisher |
 
-The bite was previously best at all three at once, which left scratch and box
-feeling like preamble. It now shoves least, and sits on a cooldown, so most of
-a fight is boxing and scratching and the bite is the move you wait for.
+Guard is a held state rather than a move: pull the left thumb firmly away and
+the crocodile plants behind its forearms, taking a third of the scale loss and
+almost none of the shove. It also refuses the finisher outright, which is what
+finally gave the finisher an answer.
+
+Each move has one job it is plainly best at, because a move that is second best
+at everything never gets used. Box owns the ring-out. The crouched uppercut owns
+the sky. The jump bite owns the kill and shoves almost nothing, so it cannot
+also win fights by pushing people out.
 
 Landing a hit freezes the frame, kicks the camera the way the punch went, and
 throws a shock ring and sparks scaled to the move. All three are per-move, so a
@@ -128,11 +140,14 @@ fetched from Google at runtime, as the handoff asks for production.
 against a reference bot and prints win rate, fight length and how each fight
 ended. Run it before touching coats, rewards or the finisher threshold.
 
-Current reading at 250 fights per croc:
+Current reading at 300 fights per croc:
 
 ```
-fresh  (45 scales, 3 hearts, claw 0)   96 / 76 / 51 / 22 / 14 %
-geared (70 scales, 5 hearts, claw 2)   96 / 81 / 78 / 82 / 41 %
+                                       win rate per croc      fights
+fresh  (45 scales, 3 hearts, claw 0)   91 / 78 / 73 / 29 / 20 %   13-18s
+geared (70 scales, 5 hearts, claw 2)   96 / 84 / 87 / 74 / 40 %   10-18s
+
+how fights end   finisher 55-81%   ring-out 6-45%   knockout 0-13%
 ```
 
 Three findings worth Tristan's attention are in
@@ -151,10 +166,19 @@ Everything below is **[proposed]** and needs sign-off.
   no job. A defeat still costs only the five scales the plan specifies.
 - **Opponents have a `power` multiplier** (0.5 up to 1.0) on what they shed off
   you, on top of the coats in §5. Without it croc 1 is not a pushover.
-- **The jump bite hitbox is small and only live near the concrete.** The plan
-  makes the bite the only committed move; this is what makes it dodgeable
-  rather than a button that wins fights.
-- **A whiffed bite opens the biter for 1.5s**, not the ~1s in §3, for the same
-  reason.
+- **The finisher threshold moved from 25 scales to none at all.** The plan calls
+  it a dial and says to expect to move it. At 25, against croc 1's 30-scale
+  coat, the lethal window was open for half the fight and the finisher ended
+  nine fights in ten; everything else was preamble. Landing it on a crocodile
+  stripped to its underpants cuts the window to a fifth of the fight, and it
+  makes the rule visible: [T13]'s underpants state already means "one good hit
+  from losing", and now it literally does. One constant in `constants.js` puts
+  25 back.
+- **The move grid and the stances are new**, and not in the plan at all. The
+  four moves it specifies all survive; the jump bite is now genuinely a jump
+  and then a bite rather than one button.
+- **Guard is new.** Without an answer to the finisher it was unanswerable.
+- **A whiffed air attack opens you for 0.85s** on landing, which is what the
+  crouched uppercut is there to punish.
 - **The whole 1120x671 frame scales to fit the window.** The handoff's HUD
   values are then exact at any resolution. Portrait phones get a rotate prompt.

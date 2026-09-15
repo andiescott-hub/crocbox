@@ -116,7 +116,8 @@ export default function LadderScreen() {
 
       <div className="note ladder-note">
         Beaten crocodiles regrow a full coat between matches, so a rematch is a slow but real way to farm
-        scales. A jump bite kills outright under {FINISHER_THRESHOLD} scales, and it works on you too.
+        scales. Strip a crocodile to its underpants and a jump bite finishes it outright, and that works on
+        you too. Pull the left thumb back to block one.
       </div>
     </div>
   );

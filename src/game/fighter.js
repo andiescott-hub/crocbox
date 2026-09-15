@@ -1,4 +1,13 @@
-import { ARENA, BITE_COOLDOWN, BODY, MOVES, PHYSICS, REGEN, CLAW_MULTIPLIER } from './constants.js';
+import {
+  AIR_WHIFF_RECOVERY,
+  ARENA,
+  BODY,
+  GUARD,
+  PHYSICS,
+  REGEN,
+  CLAW_MULTIPLIER,
+  resolveMove
+} from './constants.js';
 
 export function createFighter({
   id,
@@ -32,11 +41,16 @@ export function createFighter({
     maxHearts,
     clawMul: clawMul ?? CLAW_MULTIPLIER(clawLevel),
     action: null,
+    // What the left thumb is doing: 'stand', 'crouch' or 'air'.
+    stance: 'stand',
+    guarding: false,
+    // One attack per jump, so the air is a commitment rather than a platform.
+    airAttacked: false,
+    downed: 0,
     stun: 0,
     vulnerable: 0,
     hitFlash: 0,
     regenCd: 0,
-    biteCd: 0,
     lastArm: 1,
     walkPhase: 0,
     moving: 0,
@@ -47,10 +61,37 @@ export function createFighter({
   };
 }
 
-export const isBusy = (f) =>
-  f.ko || f.stun > 0 || f.vulnerable > 0 || f.action !== null || f.y < 0 || f.vy !== 0;
+export const isAirborne = (f) => f.y < -0.5 || f.vy !== 0;
 
-export const canAct = (f) => !isBusy(f);
+// Being in the air no longer blocks acting - attacking from up there is the
+// point. What blocks it is having already spent this jump.
+export const canAct = (f) =>
+  !f.ko &&
+  f.downed <= 0 &&
+  f.stun <= 0 &&
+  f.vulnerable <= 0 &&
+  f.action === null &&
+  !(isAirborne(f) && f.airAttacked);
+
+export const isBusy = (f) => !canAct(f);
+
+export function stanceOf(f) {
+  if (isAirborne(f)) return 'air';
+  return f.stance === 'crouch' ? 'crouch' : 'stand';
+}
+
+export function jump(f, heading = 0) {
+  if (!canAct(f) || isAirborne(f)) return false;
+  f.vy = PHYSICS.jumpVelocity;
+  f.y = -0.001;
+  // [T13] Airborne means committed. The heading is set at take-off and cannot
+  // be changed, so a jump is a decision about where you will land.
+  f.vx = heading * PHYSICS.jumpForward;
+  f.airAttacked = false;
+  f.guarding = false;
+  f.stance = 'air';
+  return true;
+}
 
 export function bodyBox(f) {
   return {
@@ -61,56 +102,60 @@ export function bodyBox(f) {
   };
 }
 
-export function startMove(f, type) {
+export function startMove(f, attack) {
   if (!canAct(f)) return false;
-  if (type === 'regenerate') {
-    if (f.regenCd > 0 || f.hearts >= f.maxHearts) return false;
+
+  if (attack === 'regenerate') {
+    if (f.regenCd > 0 || f.hearts >= f.maxHearts || isAirborne(f)) return false;
     f.action = { type: 'regenerate', t: 0, duration: REGEN.duration, healed: false };
     f.vx = 0;
+    f.guarding = false;
     return true;
   }
-  if (type === 'bite') {
-    if (f.biteCd > 0) return false;
-    f.biteCd = BITE_COOLDOWN;
-    f.action = { type: 'bite', t: 0, connected: false };
-    f.vy = PHYSICS.jumpVelocity;
-    f.y = -0.001;
-    // [T13] Airborne means committed: facing and heading are locked from here.
-    f.vx = f.facing * PHYSICS.jumpForward;
-    return true;
-  }
-  const move = MOVES[type];
+
+  const stance = stanceOf(f);
+  const move = resolveMove(stance, attack);
   if (!move) return false;
+
   // [T13] Box is one arm. Alternate arms on consecutive punches.
-  const arm = type === 'box' ? -f.lastArm : f.lastArm;
-  if (type === 'box') f.lastArm = arm;
-  f.action = { type, t: 0, phase: 'windup', arm, connected: false };
-  f.vx *= 0.35;
+  const arm = attack === 'box' ? -f.lastArm : f.lastArm;
+  if (attack === 'box') f.lastArm = arm;
+
+  f.action = { type: attack, stance, move, t: 0, phase: 'windup', arm, connected: false };
+  // Throwing an attack drops the guard; you cannot hide behind it and hit.
+  f.guarding = false;
+  if (stance === 'air') f.airAttacked = true;
+  else f.vx *= 0.35;
   return true;
 }
 
 export function attackPoint(f) {
   const a = f.action;
-  if (!a) return null;
-  if (a.type === 'bite') {
-    const m = MOVES.bite;
-    return {
-      x: f.x + f.facing * m.reach,
-      y: ARENA.ground + f.y - m.hitHeight,
-      r: m.hitRadius,
-      move: m,
-      type: 'bite'
-    };
-  }
-  const m = MOVES[a.type];
-  if (!m || a.phase !== 'active') return null;
+  if (!a || !a.move || a.phase !== 'active') return null;
+  const m = a.move;
   return {
     x: f.x + f.facing * m.reach,
-    y: ARENA.ground - m.hitHeight,
+    // Air moves carry their hitbox down with the crocodile.
+    y: ARENA.ground + f.y - m.hitHeight,
     r: m.hitRadius,
     move: m,
     type: a.type
   };
+}
+
+export const AIR_WHIFF = AIR_WHIFF_RECOVERY;
+
+// Guard is a held state, not a move: firm lean away from the opponent, on the
+// ground, not mid-attack.
+export function updateGuard(f, axisAwayFromFoe) {
+  f.guarding =
+    !isAirborne(f) &&
+    f.action === null &&
+    f.stun <= 0 &&
+    f.downed <= 0 &&
+    !f.ko &&
+    axisAwayFromFoe >= GUARD.threshold;
+  return f.guarding;
 }
 
 export function circleHitsBody(point, target) {
@@ -127,7 +172,7 @@ export function stepFighterTimers(f, dt) {
   if (f.vulnerable > 0) f.vulnerable = Math.max(0, f.vulnerable - dt);
   if (f.hitFlash > 0) f.hitFlash = Math.max(0, f.hitFlash - dt);
   if (f.regenCd > 0) f.regenCd = Math.max(0, f.regenCd - dt);
-  if (f.biteCd > 0) f.biteCd = Math.max(0, f.biteCd - dt);
+  if (f.downed > 0) f.downed = Math.max(0, f.downed - dt);
 }
 
 export function integrate(f, dt) {
@@ -138,6 +183,8 @@ export function integrate(f, dt) {
     if (f.y >= 0) {
       f.y = 0;
       f.vy = 0;
+      f.airAttacked = false;
+      if (f.stance === 'air') f.stance = 'stand';
     }
   }
   f.x += f.vx * dt;

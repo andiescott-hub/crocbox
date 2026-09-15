@@ -153,3 +153,27 @@
 @media (prefers-reduced-motion: reduce) {
   .move-pad { transition: none; }
 }
+
+/* Says what the left thumb is doing, next to the pad rather than across the
+   screen, so it confirms the stance without becoming something to read. */
+.stance-flag {
+  position: absolute;
+  left: var(--hud-inset);
+  bottom: 108px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--green-400);
+  text-shadow: var(--text-hud);
+  border: 2px solid var(--green-500);
+  border-radius: 6px;
+  padding: 5px 12px;
+  background: var(--panel-glass);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.stance-flag.crouch {
+  color: var(--amber-200);
+  border-color: var(--amber-400);
+}

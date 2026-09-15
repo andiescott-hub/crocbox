@@ -36,7 +36,9 @@ export default function TitleScreen() {
           ) : null}
         </div>
         <div className="note title-note">
-          A / D or drag to move · LMB or left tap SCRATCH · RMB or right tap BOX · SPACE or swipe up JUMP BITE · E REGENERATE
+          Left thumb moves you: lean to walk, flick up to jump, pull down to crouch, pull back to guard.
+          Right hand hits: J scratch, K box, L bite, E regenerate. What each one does depends on your stance,
+          so watch the buttons rename themselves.
         </div>
       </div>
     </div>

@@ -7,22 +7,31 @@ const KEY_HELD = {
   KeyA: 'left',
   ArrowLeft: 'left',
   KeyD: 'right',
-  ArrowRight: 'right'
+  ArrowRight: 'right',
+  KeyS: 'crouch',
+  ArrowDown: 'crouch'
 };
 
 const KEY_PRESS = {
   KeyJ: 'scratch',
   KeyK: 'box',
-  Space: 'bite',
-  KeyW: 'bite',
-  ArrowUp: 'bite',
+  KeyL: 'bite',
+  Space: 'jump',
+  KeyW: 'jump',
+  ArrowUp: 'jump',
   KeyE: 'regen'
 };
 
-// How far the thumb travels for full speed, and the slack around the centre,
-// both as a fraction of the stage width so they hold at any screen size.
+// How far the thumb travels for full tilt, and the slack around the centre,
+// as fractions of the stage so they hold at any screen size.
 const PAD_FULL = 0.055; // about 62px at the 1120px reference
 const PAD_DEAD = 0.006;
+// Vertical is coarser on purpose: walking must never trip a jump or a crouch,
+// so the thumb has to mean it. Measured against stage height.
+const PAD_V_FULL = 0.075;
+const PAD_V_DEAD = 0.028;
+const JUMP_AT = 0.6;
+const CROUCH_AT = -0.45;
 
 // Thumb displacement to speed. Pulled out as a pure function so it can be
 // asserted on directly; the rest of the pad is DOM plumbing around it.
@@ -31,9 +40,31 @@ export function padAxis(dx) {
   return t <= 0 ? 0 : Math.sign(dx) * Math.min(1, t);
 }
 
+// Positive is up. dy is in screen space, where down is positive, so it flips.
+export function padVertical(dy) {
+  const up = -dy;
+  const t = (Math.abs(up) - PAD_V_DEAD) / (PAD_V_FULL - PAD_V_DEAD);
+  return t <= 0 ? 0 : Math.sign(up) * Math.min(1, t);
+}
+
+export const readsAsJump = (v) => v >= JUMP_AT;
+export const readsAsCrouch = (v) => v <= CROUCH_AT;
+
 export function createInput() {
-  // `axis` is the analog touch pad, -1 to 1. Keyboard keeps the booleans.
-  return { left: false, right: false, axis: 0, scratch: false, box: false, bite: false, regen: false };
+  // `axis` and `vertical` are the analog pad, -1 to 1. Keyboard keeps the
+  // booleans. `jump` is an edge, `crouch` and `vertical` are held.
+  return {
+    left: false,
+    right: false,
+    crouch: false,
+    axis: 0,
+    vertical: 0,
+    jump: false,
+    scratch: false,
+    box: false,
+    bite: false,
+    regen: false
+  };
 }
 
 export function useMatchInput(stageRef, { enabled = true, onAnyInput, padRef } = {}) {
@@ -69,7 +100,9 @@ export function useMatchInput(stageRef, { enabled = true, onAnyInput, padRef } =
     const blur = () => {
       input.current.left = false;
       input.current.right = false;
+      input.current.crouch = false;
       input.current.axis = 0;
+      input.current.vertical = 0;
     };
 
     window.addEventListener('keydown', down);
@@ -138,7 +171,9 @@ export function useMatchInput(stageRef, { enabled = true, onAnyInput, padRef } =
         originY: p.y,
         thumbX: p.x,
         thumbY: p.y,
-        y0: p.y,
+        axis: 0,
+        vertical: 0,
+        jumped: false,
         moved: false,
         t0: performance.now()
       };
@@ -163,26 +198,29 @@ export function useMatchInput(stageRef, { enabled = true, onAnyInput, padRef } =
 
       if (t.zone === 'move') {
         let dx = p.x - t.originX;
-        // Push past full tilt and the centre follows, so you never run out of
-        // screen mid-fight and never have to lift off to reset.
+        // Push past full tilt sideways and the centre follows, so you never run
+        // out of screen mid-fight. Vertical does not recentre: up and down are
+        // deliberate gestures, not a place the thumb should be able to settle.
         if (Math.abs(dx) > PAD_FULL) {
           t.originX = p.x - Math.sign(dx) * PAD_FULL;
-          t.originY += (p.y - t.originY) * 0.5;
           dx = Math.sign(dx) * PAD_FULL;
         }
         t.axis = padAxis(dx);
+        t.vertical = padVertical(p.y - t.originY);
+
+        // Jump is an edge, so holding the thumb up does not pogo. It re-arms
+        // once the thumb comes back toward the middle.
+        if (readsAsJump(t.vertical)) {
+          if (!t.jumped) {
+            t.jumped = true;
+            press('jump');
+          }
+        } else if (t.vertical < JUMP_AT * 0.5) {
+          t.jumped = false;
+        }
+
         if (e.pointerId === padId) showPad(t);
         applyAxis();
-        return;
-      }
-
-      // Swipe up on the fighting hand is the jump bite. Deliberately not read
-      // from the movement hand, where a thumb drifting up would fire it.
-      const dy = p.y - t.y0;
-      if (dy < -0.09 && Math.abs(dy) > Math.abs(p.x - t.originX)) {
-        t.moved = true;
-        press('bite');
-        t.y0 = p.y;
       }
     };
 
@@ -214,10 +252,16 @@ export function useMatchInput(stageRef, { enabled = true, onAnyInput, padRef } =
     // middle kept walking.
     function applyAxis() {
       let axis = 0;
+      let vertical = 0;
       for (const t of active.values()) {
-        if (t.zone === 'move' && t.axis && Math.abs(t.axis) > Math.abs(axis)) axis = t.axis;
+        if (t.zone !== 'move') continue;
+        if (t.axis && Math.abs(t.axis) > Math.abs(axis)) axis = t.axis;
+        if (t.vertical && Math.abs(t.vertical) > Math.abs(vertical)) vertical = t.vertical;
       }
       input.current.axis = axis;
+      // Only the crouch half of the vertical range is held; the jump half is
+      // consumed as an edge above.
+      input.current.vertical = readsAsCrouch(vertical) ? vertical : 0;
     }
 
     const noMenu = (e) => e.preventDefault();
@@ -257,6 +301,7 @@ export function useMatchInput(stageRef, { enabled = true, onAnyInput, padRef } =
     i.box = false;
     i.bite = false;
     i.regen = false;
+    i.jump = false;
   };
 
   return { input, press, clearEdges };

@@ -1,4 +1,4 @@
-import { ARENA, MOVES, REGEN } from '../constants.js';
+import { ARENA, REGEN } from '../constants.js';
 import { hideColors, mix, SCALE_LIT, SCALE_BACK } from './colors.js';
 
 // The crocodile rig. Deliberately stylised and drawn in code: PLAN.md §8 rules
@@ -119,7 +119,9 @@ function teeth(ctx, count, x0, x1, y, dir, size) {
   }
 }
 
-// Resolve the fighter's action into pose numbers the rig understands.
+// Resolve the fighter's action and stance into pose numbers the rig
+// understands. One function covers all nine moves plus idle, walk, crouch,
+// guard, regenerate, hit, knockdown and the dance.
 function poseFor(f, time, dance) {
   const pose = {
     crouch: 0,
@@ -132,6 +134,8 @@ function poseFor(f, time, dance) {
     tail: Math.sin(time * 1.6 + f.x * 0.01) * 0.16,
     armL: { swing: 0, punch: 0 },
     armR: { swing: 0, punch: 0 },
+    guard: 0,
+    splay: 0,
     hips: 0,
     tongue: 0,
     crossEyes: 0,
@@ -161,6 +165,16 @@ function poseFor(f, time, dance) {
     return pose;
   }
 
+  // Knocked flat by a sweep: on its back, scrambling up.
+  if (f.downed > 0) {
+    const k = Math.min(1, f.downed / 0.55);
+    pose.supine = k;
+    pose.crossEyes = 1;
+    pose.stars = k * 0.8;
+    pose.starAngle = time * 3.4;
+    return pose;
+  }
+
   // Idle breathing and the walk cycle.
   const breathe = Math.sin(time * 2.2 + f.x * 0.02) * 1.4;
   pose.lift = breathe * (1 - f.moving);
@@ -169,54 +183,124 @@ function poseFor(f, time, dance) {
   pose.armR.swing = -step * 0.5 * f.moving;
   pose.lift += Math.abs(step) * -3 * f.moving;
 
-  const a = f.action;
-  if (a) {
-    if (a.type === 'scratch') {
-      const p = a.phase === 'windup' ? -a.t / MOVES.scratch.windup : a.phase === 'active' ? 1 : 1 - a.t / MOVES.scratch.recover;
-      const arm = a.arm > 0 ? pose.armR : pose.armL;
-      arm.punch = Math.max(-0.4, p) * 0.85;
-      pose.pitch = Math.max(0, p) * 0.06;
-      pose.jaw = Math.max(0, p) * 0.35;
-    } else if (a.type === 'box') {
-      // [T13] One front leg punches while the other three hold it up.
-      const p =
-        a.phase === 'windup'
-          ? -(a.t / MOVES.box.windup)
-          : a.phase === 'active'
-          ? 1
-          : 1 - a.t / MOVES.box.recover;
-      const arm = a.arm > 0 ? pose.armR : pose.armL;
-      arm.punch = Math.max(-0.55, p);
-      pose.pitch = Math.max(0, p) * 0.1;
-      pose.crouch = 5 * Math.max(0, -p);
-      pose.jaw = Math.max(0, p) * 0.2;
-    } else if (a.type === 'bite') {
-      // Jaws first, all four legs tucked.
-      pose.pitch = 0.34 + Math.min(0.3, Math.max(-0.2, f.vy / 2600));
-      pose.jaw = 1;
-      pose.armL.punch = 0.35;
-      pose.armR.punch = 0.35;
-      pose.tail = -0.4;
-    } else if (a.type === 'regenerate') {
-      const k = Math.min(1, a.t / (REGEN.duration * 0.35));
-      const down = a.t > REGEN.duration * 0.78 ? (a.t - REGEN.duration * 0.78) / (REGEN.duration * 0.22) : 0;
-      pose.rear = Math.max(0, k - down);
-      pose.jaw = 0.7 * pose.rear;
-      pose.armL.punch = 0.5 * pose.rear;
-      pose.armR.punch = 0.5 * pose.rear;
-    }
+  // Airborne with nothing thrown yet: nose up on the way, nose down on the
+  // fall, legs tucked. Without it a plain jump just hovers.
+  if (f.y < -1 && !f.action) {
+    pose.pitch = Math.max(-0.24, Math.min(0.3, f.vy / 2200));
+    pose.tail = -0.25 - pose.pitch * 0.5;
+    pose.armL.punch = -0.25;
+    pose.armR.punch = -0.25;
   }
 
-  pose.headTilt += pose.rear * 0.78;
+  // Held stances.
+  if (f.stance === 'crouch') {
+    pose.crouch = 30;
+    pose.splay = 1;
+    pose.pitch = -0.06;
+    pose.tail = -0.3;
+  }
+  if (f.guarding) {
+    pose.guard = 1;
+    pose.crouch = Math.max(pose.crouch, 14);
+    // Snout tucked down behind the forearms.
+    pose.headTilt = 0.26;
+    pose.jaw = 0;
+    pose.tail = 0.3;
+  }
+
+  const a = f.action;
+  if (a && a.type === 'regenerate') {
+    const k = Math.min(1, a.t / (REGEN.duration * 0.35));
+    const down = a.t > REGEN.duration * 0.78 ? (a.t - REGEN.duration * 0.78) / (REGEN.duration * 0.22) : 0;
+    pose.rear = Math.max(0, k - down);
+    pose.jaw = 0.7 * pose.rear;
+    pose.armL.punch = 0.5 * pose.rear;
+    pose.armR.punch = 0.5 * pose.rear;
+  } else if (a && a.move) {
+    const m = a.move;
+    // -1 through 0 is the wind-up, 1 is the strike, back to 0 on recovery.
+    const p =
+      a.phase === 'windup'
+        ? -(a.t / Math.max(0.01, m.windup))
+        : a.phase === 'active'
+        ? 1
+        : 1 - a.t / Math.max(0.01, m.recover);
+    const hit = Math.max(0, p);
+    const wind = Math.max(0, -p);
+    const arm = a.arm > 0 ? pose.armR : pose.armL;
+
+    if (a.stance === 'air') {
+      pose.guard = 0;
+      if (a.type === 'bite') {
+        // Jaws first, straight down.
+        pose.pitch = 0.34 + Math.min(0.3, Math.max(-0.2, f.vy / 2600));
+        pose.jaw = 1;
+        pose.armL.punch = 0.35;
+        pose.armR.punch = 0.35;
+        pose.tail = -0.4;
+      } else if (a.type === 'box') {
+        // Both arms overhead, then driven down.
+        pose.pitch = 0.12 + hit * 0.34;
+        pose.armL.punch = -0.5 + hit * 1.5;
+        pose.armR.punch = -0.5 + hit * 1.5;
+        pose.jaw = hit * 0.4;
+        pose.tail = 0.35;
+      } else {
+        // Claws out, body stretched along the dive.
+        pose.pitch = 0.22;
+        arm.punch = 0.4 + hit * 0.7;
+        pose.jaw = 0.5;
+        pose.tail = -0.2;
+      }
+    } else if (a.stance === 'crouch') {
+      pose.crouch = 34;
+      pose.splay = 1;
+      if (a.type === 'scratch') {
+        // Low sweep, right along the concrete.
+        arm.punch = hit * 1.15;
+        pose.pitch = -0.1 - hit * 0.12;
+        pose.tail = -0.6 + hit * 1.2;
+      } else if (a.type === 'box') {
+        // Uppercut: coils down, then drives up off the hind legs.
+        pose.crouch = 40 - hit * 54;
+        pose.rear = hit * 0.55;
+        arm.punch = hit;
+        pose.pitch = -wind * 0.1;
+        pose.jaw = hit * 0.5;
+      } else {
+        // Chomp: low lunge, jaws wide.
+        pose.jaw = 0.4 + hit * 0.6;
+        pose.pitch = hit * 0.18;
+        pose.crouch = 34 - hit * 10;
+      }
+    } else if (a.type === 'box') {
+      // [T13] One front leg punches while the other three hold it up.
+      arm.punch = Math.max(-0.55, p);
+      pose.pitch = hit * 0.1;
+      pose.crouch = 5 * wind;
+      pose.jaw = hit * 0.2;
+    } else if (a.type === 'bite') {
+      // Standing lunge, jaws first but feet planted.
+      pose.jaw = 0.35 + hit * 0.65;
+      pose.pitch = hit * 0.16;
+      pose.crouch = 6 * wind;
+    } else {
+      arm.punch = Math.max(-0.4, p) * 0.85;
+      pose.pitch = hit * 0.06;
+      pose.jaw = hit * 0.35;
+    }
+  }
 
   if (f.stun > 0) {
     pose.pitch = -0.16 * Math.min(1, f.stun * 4);
     pose.headTilt = -0.3 * Math.min(1, f.stun * 4);
   }
   if (f.vulnerable > 0 && !f.action) {
-    pose.crouch = 12 * Math.min(1, f.vulnerable);
+    pose.crouch = Math.max(pose.crouch, 12 * Math.min(1, f.vulnerable));
     pose.headTilt = 0.2;
   }
+
+  pose.headTilt += pose.rear * 0.78;
   return pose;
 }
 
@@ -240,7 +324,8 @@ function unrotate(tx, ty, theta) {
 export function crocHeadHeight(f, dance) {
   const rear = dance ? dance.rise : f.action?.type === 'regenerate' ? 1 : 0;
   const hop = dance ? dance.hop || 0 : 0;
-  return 118 + rear * 96 + hop;
+  const crouched = !dance && f.stance === 'crouch' ? -28 : 0;
+  return 118 + rear * 96 + hop + crouched;
 }
 
 export function drawCroc(ctx, f, { time, dance = null, groundY = ARENA.ground } = {}) {
@@ -282,6 +367,8 @@ export function drawCroc(ctx, f, { time, dance = null, groundY = ARENA.ground } 
   drawNearSide(ctx, c, pose, targets);
   drawHead(ctx, c, pose, stripped, f);
 
+  if (pose.guard > 0) drawGuardArc(ctx, pose.guard);
+
   if (f.hitFlash > 0) {
     ctx.save();
     ctx.globalAlpha = Math.min(0.4, f.hitFlash * 2);
@@ -309,21 +396,25 @@ function legTargets(pose, f, airborne, theta) {
   let backNear = [-58 + stepBack * 18 * walking, my - Math.max(0, stepBack) * 12 * walking];
   let backFar = [-64 + step * 16 * walking, my - Math.max(0, step) * 10 * walking];
 
+  // Whatever vertical offset the body is carrying has to come back out of the
+  // foot targets, or a crouching crocodile stands with its feet underground.
+  const drop = pose.lift + pose.crouch + pose.supine * 30;
+  // Crouched, the legs splay out sideways rather than tucking under.
+  const splay = pose.splay * 22;
+
   if (planted && pose.rear > 0.05) {
-    // Standing on the hind legs: keep the feet on the concrete under the hips.
-    const hop = pose.lift + pose.supine * 30;
-    backNear = unrotate(-34 + pose.hips * 14, -hop, theta);
-    backFar = unrotate(-58 - pose.hips * 10, -hop, theta);
+    backNear = unrotate(-34 + pose.hips * 14, -drop, theta);
+    backFar = unrotate(-58 - pose.hips * 10, -drop, theta);
   } else if (planted) {
-    backNear = unrotate(backNear[0], backNear[1] - pose.lift, theta);
-    backFar = unrotate(backFar[0], backFar[1] - pose.lift, theta);
+    backNear = unrotate(backNear[0] - splay, backNear[1] - drop, theta);
+    backFar = unrotate(backFar[0] - splay * 1.3, backFar[1] - drop, theta);
   }
 
   const frontNear = planted && pose.rear < 0.2
-    ? unrotate(46 + step * 20 * walking, -Math.max(0, step) * 12 * walking - pose.lift, theta)
+    ? unrotate(46 + splay + step * 20 * walking, -Math.max(0, step) * 12 * walking - drop, theta)
     : [40, my - 24];
   const frontFar = planted && pose.rear < 0.2
-    ? unrotate(40 + stepBack * 18 * walking, -Math.max(0, stepBack) * 10 * walking - pose.lift, theta)
+    ? unrotate(40 + splay * 1.2 + stepBack * 18 * walking, -Math.max(0, stepBack) * 10 * walking - drop, theta)
     : [34, my - 22];
 
   return { frontNear, frontFar, backNear, backFar };
@@ -332,6 +423,11 @@ function legTargets(pose, f, airborne, theta) {
 function armTarget(pose, side, base) {
   const arm = side === 'near' ? pose.armR : pose.armL;
   if (pose.triumphant) return [26, -128 - (pose.armJiggle || 0) * 10];
+  // Guard: both forearms up and crossed in front of the snout, high enough to
+  // read from across the arena.
+  if (pose.guard > 0 && arm.punch <= 0) {
+    return side === 'near' ? [104, -104] : [92, -92];
+  }
   if (pose.armsClamped > 0) {
     // Clamped over the underpants, jiggling half a beat behind the body.
     const j = (pose.armJiggle || 0) * 6;
@@ -559,6 +655,23 @@ function drawHead(ctx, c, pose, stripped, f) {
     ctx.lineTo(ex + 10, ey - 17);
     ctx.stroke();
   }
+  ctx.restore();
+}
+
+// The clearest signal that a hit is about to be softened. Drawn in the
+// crocodile's own frame so it faces wherever it does.
+function drawGuardArc(ctx, amount) {
+  ctx.save();
+  ctx.globalAlpha = 0.5 * amount;
+  ctx.strokeStyle = '#bfe06e';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(74, -74, 78, -0.92, 0.92);
+  ctx.stroke();
+  ctx.globalAlpha = 0.22 * amount;
+  ctx.lineWidth = 14;
+  ctx.stroke();
   ctx.restore();
 }
 

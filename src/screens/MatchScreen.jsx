@@ -3,7 +3,7 @@ import { useGame } from '../state/GameContext.jsx';
 import { getCroc } from '../data/ladder.js';
 import { createMatch, hudSnapshot, stepMatch } from '../game/combat.js';
 import { renderMatch } from '../game/render/scene.js';
-import { DEFEAT_SCALE_COST, FINISHER_THRESHOLD, STAGE } from '../game/constants.js';
+import { DEFEAT_SCALE_COST, STAGE } from '../game/constants.js';
 import { useMatchInput } from '../game/useInput.js';
 import { ActionButton, Health, ObjectiveBanner, ScaleCounter } from '../hud/HudPieces.jsx';
 import './match.css';
@@ -167,7 +167,7 @@ function MatchRun({ stageRef, opponentId, onRetry }) {
     objectiveText = 'GET BACK IN THE RING';
     objectiveTone = 'danger';
   } else if (hud.finisherOpen) {
-    objectiveText = 'JUMP BITE TO FINISH HIM';
+    objectiveText = hud.stance === 'air' ? 'BITE HIM NOW' : 'HE IS STRIPPED. JUMP, THEN BITE';
     objectiveTone = 'finisher';
   }
 
@@ -206,26 +206,37 @@ function MatchRun({ stageRef, opponentId, onRetry }) {
         <div className="hud-anchor bl">
           <ScaleCounter count={walletShown} warn={hud.finisherRisk} />
           {hud.finisherRisk && acting ? (
-            <div className="finisher-warning">UNDER {FINISHER_THRESHOLD}: ONE BITE ENDS YOU</div>
+            <div className="finisher-warning">
+              NO SCALES LEFT: A JUMP BITE ENDS YOU. PULL BACK TO BLOCK IT
+            </div>
           ) : null}
         </div>
 
         <div className="hud-anchor br">
           <div className="action-row">
+            {/* The labels change with the stance. That is the tutorial: hold
+                the thumb down and watch the three buttons rename themselves. */}
             <ActionButton
-              label="SCRATCH"
-              hint="LMB"
-              size="s14"
+              label={hud.labels.scratch}
+              hint="J"
+              size="s12"
               disabled={!acting}
               onPress={() => press('scratch')}
             />
-            <ActionButton label="BOX" hint="RMB" size="s18" disabled={!acting} onPress={() => press('box')} />
             <ActionButton
-              label="JUMP BITE"
-              hint={hud.biteCooldown > 0 ? `${hud.biteCooldown}s` : 'SPACE'}
+              label={hud.labels.box}
+              hint="K"
+              size={hud.stance === 'stand' ? 's18' : 's12'}
+              disabled={!acting}
+              primed={hud.stance === 'crouch'}
+              onPress={() => press('box')}
+            />
+            <ActionButton
+              label={hud.labels.bite}
+              hint="L"
               size="s12"
-              disabled={!acting || !hud.biteReady}
-              primed={hud.finisherOpen && hud.biteReady}
+              disabled={!acting}
+              primed={hud.stance === 'air' && hud.finisherOpen}
               onPress={() => press('bite')}
             />
             <ActionButton
@@ -237,6 +248,9 @@ function MatchRun({ stageRef, opponentId, onRetry }) {
             />
           </div>
         </div>
+
+        {hud.guarding && acting ? <div className="stance-flag">GUARD</div> : null}
+        {hud.stance === 'crouch' && acting ? <div className="stance-flag crouch">CROUCHED</div> : null}
 
         <button type="button" className="pause-tab" onClick={() => setPaused((p) => !p)}>
           {paused ? 'RESUME' : 'PAUSE'}

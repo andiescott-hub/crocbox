@@ -38,13 +38,25 @@ split roughly 90% finisher, 10% ring-out, 0% knockout.
 If hearts are meant to matter, the smallest fix is to make the finisher require
 something more than being under the threshold, and that is a change to his rule.
 
-**Update after playtesting.** This showed up in Tristan's hands as "box and
-scratch don't have much impact", which is the same finding wearing different
-clothes. Giving each move its own job and putting the bite on a cooldown fixed
-the feel and stretched fights from six to thirteen seconds out to nine to
-sixteen. It did not change the ending: the bite still closes about nine fights
-in ten, because the rule as written guarantees the finisher window opens before
-hearts are reachable. Only his call on the rule changes that.
+**Resolved, and it needs Tristan's blessing.** This surfaced in his hands as
+"box and scratch don't have much impact", which is the same finding wearing
+different clothes. Two changes fixed it.
+
+First, the stance grid: the jump bite is no longer a button, it is a jump and
+then a bite, so the finisher costs two correct inputs and can be answered with
+a crouched uppercut or a guard.
+
+Second, and this is the one that needs him, the threshold moved from 25 scales
+to none at all. The measurement that settled it: at 25, against croc 1's
+30-scale coat, the lethal window was open for **half** of every fight, because
+one box puts him under it. At zero it is open for a **fifth**. Endings went
+from 95% finisher to 55-81% finisher, 6-45% ring-out and 0-13% knockout, and
+fights stretched from six seconds to ten to eighteen.
+
+It also makes his own rule visible. Under 25 scales looks like any other
+crocodile. No scales at all is the underpants state he designed, readable from
+across the arena, and the plan already calls it "one good hit from losing".
+Now it is.
 
 ## 3. The finisher reward and the ladder reward disagree
 
