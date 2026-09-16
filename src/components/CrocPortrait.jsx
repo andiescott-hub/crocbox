@@ -29,13 +29,24 @@ export default function CrocPortrait({
 
     let raf = 0;
     const t0 = performance.now();
+    let last = t0;
+    // Kept across frames so the tail spring has continuity.
+    const state = {
+      x: 0, y: 0, vx: 0, vy: 0, facing: 1, moving: 0, walkPhase: 0,
+      action: null, stance: 'stand', guarding: false, downed: 0,
+      stun: 0, vulnerable: 0, hitFlash: 0, isPlayer: true
+    };
     const draw = (now) => {
       const t = (now - t0) / 1000;
+      const dt = Math.min(0.05, (now - last) / 1000) || 1 / 60;
+      last = now;
       renderPortrait(ctx, {
         tint,
         scales,
         maxScales,
         time: t,
+        dt,
+        state,
         dance: dancing ? danceState(t % 9) : null,
         w: width,
         h: height,

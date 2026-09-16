@@ -1,4 +1,16 @@
-import { FINISHER_THRESHOLD } from './constants.js';
+import { FINISHER_THRESHOLD, SEPARATION } from './constants.js';
+
+// Ranges are all expressed relative to how close two crocodiles can actually
+// stand. Hard-coding them meant that widening the fighting distance silently
+// stopped the opponent throwing grounded attacks at all.
+// TOUCH is nose to nose. STRIKE is the furthest a grounded attack can still
+// land, and it has to sit inside the reaches in constants.js or the brain stops
+// walking at a distance it cannot hit from, which is exactly what happened when
+// these were absolute numbers.
+const TOUCH = SEPARATION + 6;
+const STRIKE = SEPARATION + 14;
+const NEAR = SEPARATION + 80;
+const FAR = SEPARATION + 150;
 import { canAct, isAirborne } from './fighter.js';
 
 // A deliberately small opponent brain. `skill` (0..1) comes from the ladder
@@ -51,7 +63,7 @@ export function stepBrain(brain, self, foe, dt, out) {
   // Anti-air. A crouched uppercut catches a jumping crocodile and puts it back
   // in the air, and it is the reason the air game does not run the fight.
   const incoming = isAirborne(foe) && foe.vy > -300;
-  if (incoming && gap < 320 && Math.random() < alert) {
+  if (incoming && gap < NEAR + 60 && Math.random() < alert) {
     out.vertical = -1;
     out.box = true;
     brain.hold = 0.35;
@@ -60,7 +72,7 @@ export function stepBrain(brain, self, foe, dt, out) {
 
   // Out of uppercut range, back off instead. Full tilt away is also a guard,
   // and a guard refuses the finisher outright.
-  if (incoming && gap < 560 && Math.random() < (cornered ? 0.55 + s * 0.4 : 0.25 + s * 0.5)) {
+  if (incoming && gap < FAR + 220 && Math.random() < (cornered ? 0.55 + s * 0.4 : 0.25 + s * 0.5)) {
     brain.intent = 'dodge';
     brain.think = 0.1 + (1 - s) * 0.26;
     brain.hold = cornered ? 0.9 : 0.6;
@@ -70,7 +82,7 @@ export function stepBrain(brain, self, foe, dt, out) {
   const windup = foe.action && foe.action.phase === 'windup' ? foe.action : null;
   if (windup && brain.reactedTo !== windup) {
     brain.reactedTo = windup;
-    if (gap < 260 && Math.random() < 0.05 + s * 0.45) {
+    if (gap < NEAR + 20 && Math.random() < 0.05 + s * 0.45) {
       brain.intent = 'dodge';
       brain.hold = 0.45;
       brain.think = 0.25;
@@ -80,14 +92,14 @@ export function stepBrain(brain, self, foe, dt, out) {
   if (brain.think <= 0) {
     brain.think = 0.16 + (1 - s) * 0.4 + Math.random() * 0.2;
 
-    if (self.hearts <= 1 && self.regenCd <= 0 && gap > 430 && self.scales === 0) {
+    if (self.hearts <= 1 && self.regenCd <= 0 && gap > FAR + 90 && self.scales === 0) {
       brain.intent = 'regen';
     } else if (self.pushProgress > 0.62) {
       // Being shoved toward its own line: fight back into the middle.
       brain.intent = 'charge';
-    } else if (gap > 300) {
+    } else if (gap > FAR) {
       brain.intent = 'approach';
-    } else if (gap < 150 && Math.random() < 0.3 * (1 - s) + 0.2) {
+    } else if (gap < TOUCH && Math.random() < 0.22 * (1 - s) + 0.12) {
       // Reset the spacing rather than standing in the pocket trading forever.
       brain.intent = 'retreat';
     } else {
@@ -118,13 +130,13 @@ export function stepBrain(brain, self, foe, dt, out) {
     case 'charge':
       if (dir > 0) out.right = true;
       else out.left = true;
-      if (gap < 190 && brain.hold <= 0 && Math.random() < 0.5 + s * 0.4) {
+      if (gap < STRIKE && brain.hold <= 0 && Math.random() < 0.5 + s * 0.4) {
         pickAttack(brain, self, foe, out, gap, s);
       }
       break;
     case 'strike':
     default:
-      if (gap > 165) {
+      if (gap > TOUCH) {
         if (dir > 0) out.right = true;
         else out.left = true;
       }
@@ -141,7 +153,7 @@ function pickAttack(brain, self, foe, out, gap, s) {
   // [T13] The finisher cuts both ways, but it now costs a jump. A confident
   // opponent goes hunting for it once the player's coat drops under the line.
   const finisherOn = foe.scales < FINISHER_THRESHOLD && Math.random() < 0.08 + s * 0.5;
-  if (finisherOn && gap > 150 && gap < 430 && !foe.guarding) {
+  if (finisherOn && gap > TOUCH && gap < FAR + 90 && !foe.guarding) {
     brain.airPlan = 'bite';
     brain.intent = 'airattack';
     out.jump = true;
@@ -150,7 +162,7 @@ function pickAttack(brain, self, foe, out, gap, s) {
   }
 
   // A grounded crocodile that will not crouch is asking for a sweep.
-  if (gap < 190 && r < 0.14 + s * 0.16) {
+  if (gap < STRIKE && r < 0.14 + s * 0.16) {
     out.vertical = -1;
     out.scratch = true;
     brain.hold = 0.5 + (1 - s) * 0.6;
@@ -158,7 +170,7 @@ function pickAttack(brain, self, foe, out, gap, s) {
   }
 
   // Guarding opponents have to be opened up; a jump attack goes over the top.
-  if (gap > 200 && gap < 430 && (foe.guarding || r < 0.08 + s * 0.16)) {
+  if (gap > NEAR && gap < FAR + 90 && (foe.guarding || r < 0.08 + s * 0.16)) {
     brain.airPlan = r < 0.5 ? 'box' : 'scratch';
     brain.intent = 'airattack';
     out.jump = true;
@@ -166,7 +178,7 @@ function pickAttack(brain, self, foe, out, gap, s) {
     return;
   }
 
-  if (gap > 210) return;
+  if (gap > STRIKE) return;
 
   if (r < 0.38 + s * 0.18) {
     out.scratch = true;

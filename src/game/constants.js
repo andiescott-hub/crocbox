@@ -16,6 +16,14 @@ export const ARENA_MID = ARENA.width / 2;
 
 export const BODY = { halfWidth: 78, height: 104 };
 
+// How close two crocodiles can stand. Every attack reach and every range the
+// opponent brain reasons about is measured from here, so this is the one number
+// to change if the rig's proportions change again. Nose to nose has to be far
+// enough apart that two long snouts do not read as one animal.
+export const SEPARATION = 240;
+// What a grounded attack has to cross to reach the far crocodile's body.
+export const CONTACT = SEPARATION - BODY.halfWidth;
+
 export const PHYSICS = {
   walkSpeed: 300,
   drag: 3.4, // exponential decay on knockback velocity, per second
@@ -62,7 +70,7 @@ export const ATTACKS = {
     push: 300,
     shake: 6,
     hitStop: 0.035,
-    reach: 104,
+    reach: 136,
     hitHeight: 58,
     hitRadius: 36,
     stun: 0.2
@@ -76,7 +84,7 @@ export const ATTACKS = {
     push: 1150,
     shake: 15,
     hitStop: 0.1,
-    reach: 124,
+    reach: 140,
     hitHeight: 70,
     hitRadius: 40,
     stun: 0.4
@@ -90,7 +98,7 @@ export const ATTACKS = {
     push: 400,
     shake: 12,
     hitStop: 0.08,
-    reach: 120,
+    reach: 138,
     hitHeight: 52,
     hitRadius: 38,
     stun: 0.3
@@ -123,14 +131,14 @@ export const STANCES = {
 // Per-cell overrides, absolute rather than multiplied. Only where a move is
 // genuinely its own thing rather than a harder version of the standing one.
 export const CELLS = {
-  'crouch.scratch': { effect: 'knockdown', reach: 120, hitHeight: 24, stun: 0.8, push: 520, shake: 12 },
+  'crouch.scratch': { effect: 'knockdown', reach: 148, hitHeight: 24, stun: 0.8, push: 520, shake: 12 },
   // The anti-air. Catching a jumping crocodile with this is the whole point of
   // crouching, and it is what stops the air game running the fight.
-  'crouch.box': { effect: 'launch', push: 380, launch: -780, stun: 0.55, shake: 17, hitHeight: 46, reach: 108 },
-  'crouch.bite': { effect: 'clamp', push: 0, stun: 0.95, hitHeight: 30, reach: 112, shake: 10 },
+  'crouch.box': { effect: 'launch', push: 380, launch: -780, stun: 0.55, shake: 17, hitHeight: 46, reach: 134 },
+  'crouch.bite': { effect: 'clamp', push: 0, stun: 0.95, hitHeight: 30, reach: 138, shake: 10 },
   // Air windows are long: you commit at the top of the jump and the hit is
   // live most of the way down, so timing the jump is the skill, not the frame.
-  'air.scratch': { reach: 92, hitHeight: 40, hitStop: 0.05, windup: 0.06, active: 0.26 },
+  'air.scratch': { reach: 106, hitHeight: 40, hitStop: 0.05, windup: 0.06, active: 0.26 },
   'air.box': { effect: 'slam', push: 620, shake: 18, hitHeight: 46, hitStop: 0.11, windup: 0.12, active: 0.3 },
   // [T13] The finisher lives here now, and only here.
   'air.bite': {
@@ -139,7 +147,7 @@ export const CELLS = {
     push: 430,
     shake: 21,
     hitStop: 0.12,
-    reach: 96,
+    reach: 112,
     hitHeight: 34,
     hitRadius: 32,
     windup: 0.1,

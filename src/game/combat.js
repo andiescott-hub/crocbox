@@ -6,6 +6,7 @@ import {
   RIGHT_LINE,
   GUARD,
   PHYSICS,
+  SEPARATION,
   REGEN,
   FINISHER_THRESHOLD,
   HIT_STOP,
@@ -26,7 +27,7 @@ import {
   stepFighterTimers,
   updateGuard
 } from './fighter.js';
-import { spawnImpact, spawnScales, stepImpacts, stepScales } from './particles.js';
+import { spawnImpact, spawnScales, stepDust, stepImpacts, stepScales } from './particles.js';
 import { createBrain, stepBrain } from './ai.js';
 
 export const COUNTDOWN = 1.1;
@@ -73,6 +74,7 @@ export function createMatch({ player, opponent }) {
     opponent,
     particles: [],
     impacts: [],
+    dust: [],
     camKick: 0,
     time: 0,
     status: 'countdown', // countdown -> fighting -> ending -> result
@@ -330,6 +332,7 @@ export function stepMatch(match, dt, input) {
     if (match.countdown <= 0) match.status = 'fighting';
     stepScales(match.particles, dt, ARENA.ground);
     stepImpacts(match.impacts, dt);
+    stepDust(match.dust, dt);
     updateCamera(match, dt);
     return match;
   }
@@ -339,6 +342,7 @@ export function stepMatch(match, dt, input) {
     // The world holds still, but the burst and the camera keep moving, so the
     // freeze reads as impact rather than as a dropped frame.
     stepImpacts(match.impacts, dt);
+    stepDust(match.dust, dt);
     updateCamera(match, dt);
     return match;
   }
@@ -391,6 +395,7 @@ export function stepMatch(match, dt, input) {
 
   stepScales(match.particles, dt, ARENA.ground);
   stepImpacts(match.impacts, dt);
+  stepDust(match.dust, dt);
   updateCamera(match, dt);
   return match;
 }
@@ -398,7 +403,7 @@ export function stepMatch(match, dt, input) {
 function separate(a, b) {
   // Crocodiles are solid. Airborne bites pass over, everything else shoulders.
   if (a.y < -40 || b.y < -40) return;
-  const min = 198;
+  const min = SEPARATION;
   const d = b.x - a.x;
   const dist = Math.abs(d);
   if (dist >= min || dist === 0) return;

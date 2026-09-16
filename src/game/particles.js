@@ -144,3 +144,37 @@ export function stepImpacts(list, dt) {
     if (p.t >= p.life) list.splice(i, 1);
   }
 }
+
+// Dust. Kicked up by footfalls, landings and anything that hits the concrete.
+// Cheap, short lived, and it does more for weight than it has any right to.
+
+export function spawnDust(list, { x, y, count = 4, power = 1, dir = 0 }) {
+  for (let i = 0; i < count; i += 1) {
+    list.push({
+      x: x + (Math.random() - 0.5) * 18 * power,
+      y,
+      vx: (Math.random() - 0.5) * 34 * power + dir * 26 * power,
+      vy: -(8 + Math.random() * 26) * power,
+      r: (5 + Math.random() * 8) * power,
+      grow: 26 + Math.random() * 30,
+      t: 0,
+      life: 0.4 + Math.random() * 0.34
+    });
+  }
+}
+
+export function stepDust(list, dt) {
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    const d = list[i];
+    d.t += dt;
+    if (d.t >= d.life) {
+      list.splice(i, 1);
+      continue;
+    }
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+    d.vy += 24 * dt;
+    d.vx *= Math.exp(-2.2 * dt);
+    d.r += d.grow * dt;
+  }
+}

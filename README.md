@@ -127,9 +127,29 @@ possible.
 
 Everything on screen is drawn in code. `PLAN.md` §8 rules the 176 concept
 renders out for anything that moves, and there is no production art yet, so the
-crocodile, the stadium and the bags are stylised placeholders sized to be
-swapped for real assets. The crocodile rig is one function that poses itself
-from fighter state, so replacing the drawing does not touch the animation logic.
+crocodile, the stadium and the bags are drawn procedurally. The rig is one
+function that poses itself from fighter state, so replacing the drawing does not
+touch the animation logic.
+
+The crocodile is built on real anatomy rather than a cartoon shorthand: a
+raised orbital bump with a vertical slit pupil and a nictitating lid that
+blinks, the wavy jawline and the oversized fourth mandibular tooth that tells a
+crocodile from an alligator, two staggered rows of keeled scutes down the back
+merging into a single crest along the tail, banded belly scutes, mottled skin
+cells, and sprawled limbs with clawed feet. Shading runs in passes: a spine to
+flank gradient, shoulder and haunch mass, contact shadow where the limbs meet
+the body, and a rim light along every top edge, because the stadium floods are
+overhead.
+
+The tail is not drawn, it is simulated: a six segment chain that springs toward
+the pose and lags behind it, so it whips on every jump, punch and shove. Hits
+squash the body and dives stretch it, air attacks trail a smear, and footfalls,
+landings and knockdowns kick dust off the concrete.
+
+The snout is drawn slightly foreshortened and the whole rig scaled to 0.85. A
+full-length crocodile skull is longer than two fighters standing at punching
+distance can accommodate, and without it the pair read as one animal with a head
+at each end.
 
 Both fonts (Bungee, Chakra Petch) are bundled in `public/fonts` rather than
 fetched from Google at runtime, as the handoff asks for production.

@@ -6,9 +6,9 @@
 // brain in game/ai.js. Both are [proposed] dials, not Tristan's numbers: croc 1
 // has to be a pushover or the first fight teaches the wrong lesson.
 export const LADDER = [
-  { id: 'croc-1', rank: 1, name: 'CROC 1', coat: 30, hearts: 3, reward: 1, tint: '#c9d6a4', skill: 0.14, power: 0.5 },
-  { id: 'croc-2', rank: 2, name: 'CROC 2', coat: 40, hearts: 4, reward: 2, tint: '#e2c48a', skill: 0.3, power: 0.65 },
-  { id: 'croc-3', rank: 3, name: 'CROC 3', coat: 55, hearts: 5, reward: 4, tint: '#d79a7c', skill: 0.5, power: 0.82 },
+  { id: 'croc-1', rank: 1, name: 'CROC 1', coat: 30, hearts: 3, reward: 1, tint: '#c9d6a4', skill: 0.16, power: 0.62 },
+  { id: 'croc-2', rank: 2, name: 'CROC 2', coat: 40, hearts: 4, reward: 2, tint: '#e2c48a', skill: 0.32, power: 0.78 },
+  { id: 'croc-3', rank: 3, name: 'CROC 3', coat: 55, hearts: 5, reward: 4, tint: '#d79a7c', skill: 0.5, power: 0.9 },
   { id: 'croc-4', rank: 4, name: 'CROC 4', coat: 70, hearts: 5, reward: 8, tint: '#b98fd0', skill: 0.68, power: 0.95 },
   { id: 'croc-5', rank: 5, name: 'CROC 5', coat: 90, hearts: 6, reward: 16, tint: '#e08585', skill: 0.78, power: 1 }
 ];

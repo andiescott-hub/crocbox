@@ -101,7 +101,7 @@ function MatchRun({ stageRef, opponentId, onRetry }) {
         }
       }
 
-      renderMatch(ctx, m, { victoryDance: state.player.victoryDance });
+      renderMatch(ctx, m, { victoryDance: state.player.victoryDance, dt });
 
       publish += dt;
       if (publish > 1 / 30) {

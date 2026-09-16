@@ -37,6 +37,21 @@ function drawScales(ctx, particles) {
   }
 }
 
+// Concrete dust. Drawn under everything else so the crocodiles kick it up
+// rather than wear it.
+function drawDust(ctx, list) {
+  for (const d of list) {
+    const k = d.t / d.life;
+    ctx.save();
+    ctx.globalAlpha = 0.34 * (1 - k);
+    ctx.fillStyle = '#9aa189';
+    ctx.beginPath();
+    ctx.ellipse(d.x, d.y, d.r, d.r * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 function drawImpacts(ctx, impacts) {
   for (const p of impacts) {
     const k = p.t / p.life;
@@ -130,7 +145,7 @@ function drawNameplate(ctx, f, text, tone, headHeight) {
   ctx.restore();
 }
 
-export function renderMatch(ctx, match, { victoryDance = null } = {}) {
+export function renderMatch(ctx, match, { victoryDance = null, dt = 1 / 60 } = {}) {
   const shake = match.shake;
   // Random shake for noise, plus a directional kick so the camera visibly gets
   // shoved the way the punch went.
@@ -162,9 +177,10 @@ export function renderMatch(ctx, match, { victoryDance = null } = {}) {
 
   const order = player.x <= opp.x ? [opp, player] : [player, opp];
   for (const f of order) {
-    drawCroc(ctx, f, { time: match.time, dance: danceFor(f) });
+    drawCroc(ctx, f, { time: match.time, dt, dance: danceFor(f), dust: match.dust });
   }
 
+  drawDust(ctx, match.dust ?? []);
   drawScales(ctx, match.particles);
   drawImpacts(ctx, match.impacts ?? []);
 
@@ -181,30 +197,36 @@ export function renderMatch(ctx, match, { victoryDance = null } = {}) {
 // portraits with rank).
 const RIG = { w: 420, h: 300 };
 
-export function renderPortrait(ctx, { tint, scales = 30, maxScales = 40, time = 0, dance = null, w, h, zoom = 1 }) {
+export function renderPortrait(ctx, { tint, scales = 30, maxScales = 40, time = 0, dt = 1 / 60, dance = null, w, h, zoom = 1, state = null }) {
   ctx.clearRect(0, 0, w, h);
   ctx.save();
   ctx.translate(w * 0.5 + 4, h * 0.96);
   const k = Math.min(h / RIG.h, w / RIG.w) * zoom;
   ctx.scale(k, k);
-  drawCroc(
-    ctx,
+  // A portrait keeps its own persistent fighter so the tail spring has
+  // somewhere to live between frames.
+  const f =
+    state ??
     {
       x: 0,
       y: 0,
+      vx: 0,
+      vy: 0,
       facing: 1,
-      tint,
-      scales,
-      maxScales,
       moving: 0,
       walkPhase: 0,
       action: null,
+      stance: 'stand',
+      guarding: false,
+      downed: 0,
       stun: 0,
       vulnerable: 0,
       hitFlash: 0,
       isPlayer: true
-    },
-    { time, dance, groundY: 0 }
-  );
+    };
+  f.tint = tint;
+  f.scales = scales;
+  f.maxScales = maxScales;
+  drawCroc(ctx, f, { time, dt, dance, groundY: 0 });
   ctx.restore();
 }
